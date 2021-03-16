@@ -20,6 +20,7 @@ package org.apache.shardingsphere.infra.metadata.schema.builder.loader.dialect;
 import org.apache.shardingsphere.infra.metadata.schema.builder.loader.DataTypeLoader;
 import org.apache.shardingsphere.infra.metadata.schema.builder.spi.DialectTableMetaDataLoader;
 import org.apache.shardingsphere.infra.metadata.schema.model.ColumnMetaData;
+import org.apache.shardingsphere.infra.metadata.schema.model.IndexMetaData;
 import org.apache.shardingsphere.infra.metadata.schema.model.TableMetaData;
 
 import javax.sql.DataSource;
@@ -28,8 +29,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
@@ -41,15 +45,23 @@ public final class MySQLTableMetaDataLoader implements DialectTableMetaDataLoade
     
     private static final String TABLE_META_DATA_SQL_WITH_EXISTED_TABLES = BASIC_TABLE_META_DATA_SQL + " AND TABLE_NAME NOT IN (%s)";
     
+    private static final String BASIC_INDEX_META_DATA_SQL = "SELECT INDEX_NAME FROM information_schema.statistics WHERE TABLE_SCHEMA=?";
+    
     @Override
     public Map<String, TableMetaData> load(final DataSource dataSource, final Collection<String> existedTables) throws SQLException {
+        return loadTableMetaDataMap(dataSource, existedTables);
+    }
+    
+    private Map<String, TableMetaData> loadTableMetaDataMap(final DataSource dataSource, final Collection<String> existedTables) throws SQLException {
         Map<String, TableMetaData> result = new LinkedHashMap<>();
-        loadColumnMetaData(dataSource, existedTables, result);
-        // TODO load index
+        for (Entry<String, Collection<ColumnMetaData>> entry : loadColumnMetaDataMap(dataSource, existedTables).entrySet()) {
+            result.put(entry.getKey(), new TableMetaData(entry.getValue(), loadIndexMetaData(dataSource, entry.getKey())));
+        }
         return result;
     }
     
-    private void loadColumnMetaData(final DataSource dataSource, final Collection<String> existedTables, final Map<String, TableMetaData> tableMetaDataMap) throws SQLException {
+    private Map<String, Collection<ColumnMetaData>> loadColumnMetaDataMap(final DataSource dataSource, final Collection<String> existedTables) throws SQLException {
+        Map<String, Collection<ColumnMetaData>> result = new HashMap<>();
         try (
                 Connection connection = dataSource.getConnection();
                 PreparedStatement preparedStatement = connection.prepareStatement(getTableMetaDataSQL(existedTables))) {
@@ -59,13 +71,14 @@ public final class MySQLTableMetaDataLoader implements DialectTableMetaDataLoade
                 while (resultSet.next()) {
                     String tableName = resultSet.getString("TABLE_NAME");
                     ColumnMetaData columnMetaData = loadColumnMetaData(dataTypes, resultSet);
-                    if (!tableMetaDataMap.containsKey(tableName)) {
-                        tableMetaDataMap.put(tableName, new TableMetaData());
+                    if (!result.containsKey(tableName)) {
+                        result.put(tableName, new LinkedList<>());
                     }
-                    tableMetaDataMap.get(tableName).getColumns().put(columnMetaData.getName(), columnMetaData);
+                    result.get(tableName).add(columnMetaData);
                 }
             }
         }
+        return result;
     }
     
     private ColumnMetaData loadColumnMetaData(final Map<String, Integer> dataTypeMap, final ResultSet resultSet) throws SQLException {
@@ -73,13 +86,30 @@ public final class MySQLTableMetaDataLoader implements DialectTableMetaDataLoade
         String dataType = resultSet.getString("DATA_TYPE");
         boolean primaryKey = "PRI".equals(resultSet.getString("COLUMN_KEY"));
         boolean generated = "auto_increment".equals(resultSet.getString("EXTRA"));
-        boolean caseSensitive = null != resultSet.getString("COLLATION_NAME") && resultSet.getString("COLLATION_NAME").endsWith("_ci");
+        String collationName = resultSet.getString("COLLATION_NAME");
+        boolean caseSensitive = null != collationName && collationName.endsWith("_ci");
         return new ColumnMetaData(columnName, dataTypeMap.get(dataType), primaryKey, generated, caseSensitive);
     }
     
     private String getTableMetaDataSQL(final Collection<String> existedTables) {
         return existedTables.isEmpty() ? BASIC_TABLE_META_DATA_SQL
                 : String.format(TABLE_META_DATA_SQL_WITH_EXISTED_TABLES, existedTables.stream().map(each -> String.format("'%s'", each)).collect(Collectors.joining(",")));
+    }
+    
+    private Collection<IndexMetaData> loadIndexMetaData(final DataSource dataSource, final String tableName) throws SQLException {
+        Collection<IndexMetaData> result = new LinkedList<>();
+        try (
+                Connection connection = dataSource.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(BASIC_INDEX_META_DATA_SQL)) {
+            preparedStatement.setString(1, tableName);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    String indexName = resultSet.getString("INDEX_NAME");
+                    result.add(new IndexMetaData(indexName));
+                }
+            }
+        }
+        return result;
     }
     
     @Override

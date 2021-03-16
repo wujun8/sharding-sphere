@@ -160,15 +160,15 @@ public final class RegistryCenterTest {
     }
     
     @Test
-    public void assertTryGlobalLock() {
-        registryCenter.tryGlobalLock(50L);
-        verify(registryRepository).tryLock(eq(new LockNode().getGlobalLockNodePath()), eq(50L), eq(TimeUnit.MILLISECONDS));
+    public void assertTryLock() {
+        registryCenter.tryLock(50L);
+        verify(registryRepository).tryLock(eq(new LockNode().getLockNodePath()), eq(50L), eq(TimeUnit.MILLISECONDS));
     }
     
     @Test
-    public void assertReleaseGlobalLock() {
-        registryCenter.releaseGlobalLock();
-        verify(registryRepository).releaseLock(eq(new LockNode().getGlobalLockNodePath()));
+    public void assertReleaseLock() {
+        registryCenter.releaseLock();
+        verify(registryRepository).releaseLock(eq(new LockNode().getLockNodePath()));
     }
     
     @Test
