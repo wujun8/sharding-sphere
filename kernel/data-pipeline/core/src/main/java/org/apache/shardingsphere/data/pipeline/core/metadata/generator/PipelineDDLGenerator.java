@@ -34,7 +34,6 @@ import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.database.schema.util.IndexMetaDataUtils;
 import org.apache.shardingsphere.infra.parser.SQLParserEngine;
-import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.SQLSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.ddl.constraint.ConstraintSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.ddl.index.IndexSegment;
@@ -44,8 +43,10 @@ import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -57,13 +58,11 @@ import java.util.TreeMap;
 @Slf4j
 public final class PipelineDDLGenerator {
     
-    private static final String DELIMITER = ";";
-    
     private static final String SET_SEARCH_PATH_PREFIX = "set search_path";
     
     /**
      * Generate logic DDL.
-     * 
+     *
      * @param databaseType database type
      * @param sourceDataSource source data source
      * @param schemaName schema name
@@ -73,17 +72,22 @@ public final class PipelineDDLGenerator {
      * @return DDL SQL
      * @throws SQLException SQL exception 
      */
-    public String generateLogicDDL(final DatabaseType databaseType, final DataSource sourceDataSource,
-                                   final String schemaName, final String sourceTableName, final String targetTableName, final SQLParserEngine parserEngine) throws SQLException {
+    public List<String> generateLogicDDL(final DatabaseType databaseType, final DataSource sourceDataSource,
+                                         final String schemaName, final String sourceTableName, final String targetTableName, final SQLParserEngine parserEngine) throws SQLException {
         long startTimeMillis = System.currentTimeMillis();
-        StringBuilder result = new StringBuilder();
+        List<String> result = new ArrayList<>();
         for (String each : DatabaseTypedSPILoader.getService(DialectPipelineSQLBuilder.class, databaseType).buildCreateTableSQLs(sourceDataSource, schemaName, sourceTableName)) {
             Optional<String> queryContext = decorate(databaseType, sourceDataSource, schemaName, targetTableName, parserEngine, each);
-            queryContext.ifPresent(optional -> result.append(optional).append(DELIMITER).append(System.lineSeparator()));
+            queryContext.ifPresent(sql -> {
+                String trimmedSql = sql.trim();
+                if (!Strings.isNullOrEmpty(trimmedSql)) {
+                    result.add(trimmedSql);
+                }
+            });
         }
         log.info("generateLogicDDL, databaseType={}, schemaName={}, sourceTableName={}, targetTableName={}, cost {} ms",
                 databaseType.getType(), schemaName, sourceTableName, targetTableName, System.currentTimeMillis() - startTimeMillis);
-        return result.toString();
+        return result;
     }
     
     private Optional<String> decorate(final DatabaseType databaseType, final DataSource dataSource, final String schemaName, final String targetTableName,
@@ -104,8 +108,7 @@ public final class PipelineDDLGenerator {
     }
     
     private String decorateActualSQL(final String databaseName, final String targetTableName, final SQLParserEngine parserEngine, final String sql) {
-        QueryContext queryContext = getQueryContext(databaseName, parserEngine, sql);
-        SQLStatementContext sqlStatementContext = queryContext.getSqlStatementContext();
+        SQLStatementContext sqlStatementContext = parseSQL(databaseName, parserEngine, sql);
         Map<SQLSegment, String> replaceMap = new TreeMap<>(Comparator.comparing(SQLSegment::getStartIndex));
         if (sqlStatementContext instanceof CreateTableStatementContext) {
             appendFromIndexAndConstraint(replaceMap, targetTableName, sqlStatementContext);
@@ -125,9 +128,8 @@ public final class PipelineDDLGenerator {
         return doDecorateActualTable(replaceMap, sql);
     }
     
-    private QueryContext getQueryContext(final String databaseName, final SQLParserEngine parserEngine, final String sql) {
-        SQLStatementContext sqlStatementContext = new SQLBindEngine(null, databaseName, new HintValueContext()).bind(parserEngine.parse(sql, true), Collections.emptyList());
-        return new QueryContext(sqlStatementContext, sql, Collections.emptyList(), new HintValueContext());
+    private SQLStatementContext parseSQL(final String databaseName, final SQLParserEngine parserEngine, final String sql) {
+        return new SQLBindEngine(null, databaseName, new HintValueContext()).bind(parserEngine.parse(sql, true), Collections.emptyList());
     }
     
     private void appendFromIndexAndConstraint(final Map<SQLSegment, String> replaceMap, final String targetTableName, final SQLStatementContext sqlStatementContext) {
@@ -183,8 +185,7 @@ public final class PipelineDDLGenerator {
     }
     
     private String replaceTableNameWithPrefix(final String sql, final String prefix, final String databaseName, final SQLParserEngine parserEngine) {
-        QueryContext queryContext = getQueryContext(databaseName, parserEngine, sql);
-        SQLStatementContext sqlStatementContext = queryContext.getSqlStatementContext();
+        SQLStatementContext sqlStatementContext = parseSQL(databaseName, parserEngine, sql);
         if (sqlStatementContext instanceof CreateTableStatementContext || sqlStatementContext instanceof CommentStatementContext
                 || sqlStatementContext instanceof CreateIndexStatementContext || sqlStatementContext instanceof AlterTableStatementContext) {
             if (((TableAvailable) sqlStatementContext).getTablesContext().getSimpleTables().isEmpty()) {

@@ -24,7 +24,7 @@ import lombok.Setter;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.context.segment.select.projection.DerivedColumn;
 import org.apache.shardingsphere.infra.binder.context.segment.select.projection.Projection;
-import org.apache.shardingsphere.infra.binder.context.segment.select.projection.util.ProjectionUtils;
+import org.apache.shardingsphere.infra.binder.context.segment.select.projection.extractor.ProjectionIdentifierExtractEngine;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.sql.parser.statement.core.enums.AggregationType;
 import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
@@ -62,8 +62,10 @@ public class AggregationProjection implements Projection {
     
     @Override
     public String getColumnLabel() {
-        return getAlias().isPresent() && !DerivedColumn.isDerivedColumnName(getAlias().get().getValueWithQuoteCharacters()) ? ProjectionUtils.getColumnLabelFromAlias(getAlias().get(), databaseType)
-                : ProjectionUtils.getColumnNameFromFunction(type.name(), expression, databaseType);
+        ProjectionIdentifierExtractEngine extractEngine = new ProjectionIdentifierExtractEngine(databaseType);
+        return getAlias().isPresent() && !DerivedColumn.isDerivedColumnName(getAlias().get().getValueWithQuoteCharacters())
+                ? extractEngine.getIdentifierValue(getAlias().get())
+                : extractEngine.getColumnNameFromFunction(type.name(), expression);
     }
     
     @Override

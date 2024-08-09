@@ -34,6 +34,7 @@ import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSp
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
 import org.apache.shardingsphere.infra.parser.sql.SQLStatementParserEngine;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.sharding.api.config.ShardingRuleConfiguration;
@@ -62,6 +63,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -69,6 +71,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ShardingRouteCacheableCheckerTest {
     
@@ -145,7 +148,13 @@ class ShardingRouteCacheableCheckerTest {
     
     private QueryContext createQueryContext(final ShardingSphereDatabase database, final String sql, final List<Object> params) {
         SQLStatementContext sqlStatementContext = new SQLBindEngine(createShardingSphereMetaData(database), DATABASE_NAME, new HintValueContext()).bind(parse(sql), params);
-        return new QueryContext(sqlStatementContext, sql, params, new HintValueContext());
+        return new QueryContext(sqlStatementContext, sql, params, new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class));
+    }
+    
+    private ConnectionContext mockConnectionContext() {
+        ConnectionContext result = mock(ConnectionContext.class);
+        when(result.getCurrentDatabaseName()).thenReturn(Optional.of(DATABASE_NAME));
+        return result;
     }
     
     private ShardingSphereMetaData createShardingSphereMetaData(final ShardingSphereDatabase database) {

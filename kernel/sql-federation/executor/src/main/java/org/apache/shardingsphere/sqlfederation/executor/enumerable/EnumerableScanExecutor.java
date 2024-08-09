@@ -112,14 +112,12 @@ public final class EnumerableScanExecutor implements ScanExecutor {
             return createMemoryEnumerable(databaseName, schemaName, table, databaseType);
         }
         QueryContext queryContext = createQueryContext(federationContext.getMetaData(), scanContext, databaseType, federationContext.getQueryContext().isUseCache());
-        ShardingSphereDatabase database = federationContext.getMetaData().getDatabase(databaseName);
-        ExecutionContext executionContext = new KernelProcessor().generateExecutionContext(
-                queryContext, database, globalRuleMetaData, executorContext.getProps(), new ConnectionContext(Collections::emptySet));
+        ExecutionContext executionContext = new KernelProcessor().generateExecutionContext(queryContext, globalRuleMetaData, executorContext.getProps(), new ConnectionContext(Collections::emptySet));
         if (federationContext.isPreview()) {
             federationContext.getPreviewExecutionUnits().addAll(executionContext.getExecutionUnits());
             return createEmptyEnumerable();
         }
-        return createJDBCEnumerable(queryContext, database, executionContext);
+        return createJDBCEnumerable(queryContext, federationContext.getMetaData().getDatabase(databaseName), executionContext);
     }
     
     private AbstractEnumerable<Object> createJDBCEnumerable(final QueryContext queryContext, final ShardingSphereDatabase database, final ExecutionContext context) {
@@ -210,7 +208,7 @@ public final class EnumerableScanExecutor implements ScanExecutor {
         List<Object> params = getParameters(sqlString.getParamIndexes());
         HintValueContext hintValueContext = new HintValueContext();
         SQLStatementContext sqlStatementContext = new SQLBindEngine(metaData, executorContext.getDatabaseName(), hintValueContext).bind(sqlStatement, params);
-        return new QueryContext(sqlStatementContext, sql, params, hintValueContext, useCache);
+        return new QueryContext(sqlStatementContext, sql, params, hintValueContext, new ConnectionContext(Collections::emptySet), metaData, useCache);
     }
     
     private List<Object> getParameters(final int[] paramIndexes) {

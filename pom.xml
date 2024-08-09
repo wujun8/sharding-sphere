@@ -69,7 +69,7 @@
         <error_prone_annotations.version>2.22.0</error_prone_annotations.version>
         <j2objc-annotations.version>1.3</j2objc-annotations.version>
         
-        <commons-lang3.version>3.12.0</commons-lang3.version>
+        <commons-lang3.version>3.15.0</commons-lang3.version>
         <commons-codec.version>1.16.0</commons-codec.version>
         <commons-math3.version>3.6.1</commons-math3.version>
         <caffeine.version>2.9.3</caffeine.version>
@@ -97,16 +97,16 @@
         <jboss-logging.version>3.2.1.Final</jboss-logging.version>
         <seata.version>2.0.0</seata.version>
         
-        <netty.version>4.1.106.Final</netty.version>
-        <bouncycastle.version>1.70</bouncycastle.version>
+        <netty.version>4.1.112.Final</netty.version>
+        <bouncycastle.version>1.78.1</bouncycastle.version>
         
-        <curator.version>5.6.0</curator.version>
+        <curator.version>5.7.0</curator.version>
         <zookeeper.version>3.9.2</zookeeper.version>
         <audience-annotations.version>0.12.0</audience-annotations.version>
         <jetcd.version>0.7.7</jetcd.version>
         <vertx.version>4.5.1</vertx.version>
         
-        <grpc.version>1.58.0</grpc.version>
+        <grpc.version>1.65.1</grpc.version>
         <protobuf.version>3.21.12</protobuf.version>
         <okhttp.version>4.12.0</okhttp.version>
         
@@ -121,11 +121,10 @@
         <postgresql.version>42.7.2</postgresql.version>
         <mysql-connector-java.version>8.3.0</mysql-connector-java.version>
         <mssql.version>6.1.7.jre8-preview</mssql.version>
-        <hbase.client.version>1.7.1</hbase.client.version>
         <h2.version>2.2.224</h2.version>
         <opengauss.version>3.1.0-og</opengauss.version>
         <mariadb-java-client.version>2.4.2</mariadb-java-client.version>
-        <clickhouse-jdbc.version>0.6.0-patch5</clickhouse-jdbc.version>
+        <clickhouse-jdbc.version>0.6.3</clickhouse-jdbc.version>
         <hive.version>3.1.3</hive.version>
         <presto.version>0.282</presto.version>
         
@@ -136,20 +135,47 @@
         <opentelemetry.version>1.31.0</opentelemetry.version>
         <kotlin-stdlib.version>1.9.10</kotlin-stdlib.version>
         
-        <junit.version>5.10.2</junit.version>
+        <junit.version>5.10.3</junit.version>
         <hamcrest.version>2.2</hamcrest.version>
         <mockito.version>4.11.0</mockito.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <testcontainers.version>1.19.3</testcontainers.version>
+        <testcontainers.version>1.20.0</testcontainers.version>
         <commons-csv.version>1.9.0</commons-csv.version>
         
-        <graal-sdk.version>24.0.0</graal-sdk.version>
+        <graal-sdk.version>24.0.2</graal-sdk.version>
         <jedis.version>4.4.6</jedis.version>
+        
+        <joda-time.version>2.9.9</joda-time.version>
+        <jackson-asl.version>1.9.13</jackson-asl.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <commons-beanutils.version>1.9.4</commons-beanutils.version>
+        <commons-cli.version>1.4</commons-cli.version>
+        <commons-compress.version>1.26.2</commons-compress.version>
+        <commons-io.version>2.11.0</commons-io.version>
+        <commons-net.version>3.6</commons-net.version>
+        <httpclient.version>4.5.14</httpclient.version>
+        <httpcore.version>4.4.15</httpcore.version>
+        <guice.version>4.0</guice.version>
+        <hadoop.version>3.1.0</hadoop.version>
+        <avro.version>1.7.7</avro.version>
+        <libthrift.version>0.9.3</libthrift.version>
+        <nimbus.version>4.41.1</nimbus.version>
+        <metrics-core.version>3.2.1</metrics-core.version>
+        <jcodings.version>1.0.18</jcodings.version>
+        <jersey.version>1.19</jersey.version>
+        <jetty.version>9.3.20.v20170531</jetty.version>
+        <jline.version>2.14.3</jline.version>
+        <jsr305.version>3.0.2</jsr305.version>
+        <snappy.version>1.1.10.5</snappy.version>
+        <jettison.version>1.5.4</jettison.version>
+        <jamon.version>2.4.1</jamon.version>
+        <okio.version>3.6.0</okio.version>
+        <re2j.version>1.7</re2j.version>
+        <derby.version>10.14.2.0</derby.version>
         
         <!-- 3rd party library plugin versions -->
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <dockerfile-maven.version>1.4.13</dockerfile-maven.version>
-        <docker-compose-maven-plugin.version>4.0.0</docker-compose-maven-plugin.version>
         <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
         <native-maven-plugin.version>0.10.2</native-maven-plugin.version>
         
@@ -178,7 +204,7 @@
         
         <!-- Check plugin versions -->
         <apache-rat-plugin.version>0.15</apache-rat-plugin.version>
-        <spotless-maven-plugin.version>2.22.1</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>2.24.1</spotless-maven-plugin.version>
         <maven-checkstyle-plugin.version>3.2.1</maven-checkstyle-plugin.version>
         <maven-pmd-plugin.version>3.20.0</maven-pmd-plugin.version>
         <spotbugs-maven-plugin.version>4.7.2.1</spotbugs-maven-plugin.version>
@@ -193,7 +219,6 @@
         <maven-jxr-plugin.version>3.3.0</maven-jxr-plugin.version>
         <jdepend-maven-plugin.version>2.0</jdepend-maven-plugin.version>
         <taglist-maven-plugin.version>2.4</taglist-maven-plugin.version>
-        <dependency-check-maven.version>9.0.10</dependency-check-maven.version>
     </properties>
     
     <dependencyManagement>
@@ -326,12 +351,12 @@
             
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bcpkix-jdk15on</artifactId>
+                <artifactId>bcpkix-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.bouncycastle</groupId>
-                <artifactId>bctls-jdk15on</artifactId>
+                <artifactId>bctls-jdk18on</artifactId>
                 <version>${bouncycastle.version}</version>
             </dependency>
             
@@ -452,11 +477,6 @@
                 <artifactId>mssql-jdbc</artifactId>
                 <version>${mssql.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-shaded-client</artifactId>
-                <version>${hbase.client.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.opengauss</groupId>
@@ -723,6 +743,188 @@
                 <version>${jedis.version}</version>
                 <scope>provided</scope>
             </dependency>
+            
+            <dependency>
+                <groupId>joda-time</groupId>
+                <artifactId>joda-time</artifactId>
+                <version>${joda-time.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-core-asl</artifactId>
+                <version>${jackson-asl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jackson</groupId>
+                <artifactId>jackson-mapper-asl</artifactId>
+                <version>${jackson-asl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-cli</groupId>
+                <artifactId>commons-cli</artifactId>
+                <version>${commons-cli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-net</groupId>
+                <artifactId>commons-net</artifactId>
+                <version>${commons-net.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>${guice.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.inject.extensions</groupId>
+                <artifactId>guice-servlet</artifactId>
+                <version>${guice.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-annotations</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-common</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-auth</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-hdfs</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-api</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-common</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-yarn-server-common</artifactId>
+                <version>${hadoop.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro</artifactId>
+                <version>${avro.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>${libthrift.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${metrics-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jruby.jcodings</groupId>
+                <artifactId>jcodings</artifactId>
+                <version>${jcodings.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-core</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-server</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-util-ajax</artifactId>
+                <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+                <version>${jsr305.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.jettison</groupId>
+                <artifactId>jettison</artifactId>
+                <version>${jettison.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jamon</groupId>
+                <artifactId>jamon-runtime</artifactId>
+                <version>${jamon.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${okio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.re2j</groupId>
+                <artifactId>re2j</artifactId>
+                <version>${re2j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.derby</groupId>
+                <artifactId>derby</artifactId>
+                <version>${derby.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     
@@ -786,12 +988,9 @@
             <artifactId>jcl-over-slf4j</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jul-to-slf4j</artifactId>
-        </dependency>
-        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.cedarsoftware</groupId>
@@ -818,12 +1017,6 @@
                     <artifactId>dockerfile-maven-plugin</artifactId>
                     <version>${dockerfile-maven.version}</version>
                 </plugin>
-                <!-- TODO nianjun should remove after test container is used in agent e2e -->
-                <plugin>
-                    <groupId>com.dkanejs.maven.plugins</groupId>
-                    <artifactId>docker-compose-maven-plugin</artifactId>
-                    <version>${docker-compose-maven-plugin.version}</version>
-                </plugin>
                 
                 <!-- Compile plugins -->
                 <plugin>
@@ -837,6 +1030,7 @@
                             </goals>
                             <configuration>
                                 <rules>
+                                    <dependencyConvergence />
                                     <requireMavenVersion>
                                         <version>${maven.version.range}</version>
                                     </requireMavenVersion>
@@ -994,11 +1188,6 @@
                         <aggregate>true</aggregate>
                     </configuration>
                 </plugin>
-                <plugin>
-                    <groupId>org.owasp</groupId>
-                    <artifactId>dependency-check-maven</artifactId>
-                    <version>${dependency-check-maven.version}</version>
-                </plugin>
             </plugins>
         </pluginManagement>
         
@@ -1098,10 +1287,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>taglist-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.owasp</groupId>
-                <artifactId>dependency-check-maven</artifactId>
             </plugin>
         </plugins>
     </reporting>
@@ -1297,6 +1482,12 @@
                                         <!--suppress MavenModelInspection -->
                                         <file>${maven.multiModuleProjectDirectory}/src/resources/spotless/copyright.txt</file>
                                     </licenseHeader>
+                                    <replaceRegex>
+                                        <!-- specify replacements using regex match and replace -->
+                                        <name>Formatting JavaDoc extra spaces</name>
+                                        <searchRegex>\*\s+(\r?\n)\s{5}\*</searchRegex>
+                                        <replacement>*$1     *</replacement>
+                                    </replaceRegex>
                                 </java>
                                 <pom>
                                     <sortPom>

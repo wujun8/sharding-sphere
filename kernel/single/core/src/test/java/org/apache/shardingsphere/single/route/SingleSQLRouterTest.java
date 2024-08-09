@@ -26,6 +26,7 @@ import org.apache.shardingsphere.infra.database.h2.type.H2DatabaseType;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.resource.ResourceMetaData;
 import org.apache.shardingsphere.infra.metadata.database.resource.node.StorageNode;
@@ -60,6 +61,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -215,6 +217,12 @@ class SingleSQLRouterTest {
     private QueryContext createQueryContext() {
         CreateTableStatement createTableStatement = new MySQLCreateTableStatement(false);
         createTableStatement.setTable(new SimpleTableSegment(new TableNameSegment(1, 2, new IdentifierValue("t_order"))));
-        return new QueryContext(new CreateTableStatementContext(createTableStatement), "CREATE TABLE", new LinkedList<>(), new HintValueContext());
+        ConnectionContext connectionContext = mock(ConnectionContext.class);
+        when(connectionContext.getCurrentDatabaseName()).thenReturn(Optional.of(DefaultDatabase.LOGIC_NAME));
+        ShardingSphereMetaData metaData = mock(ShardingSphereMetaData.class);
+        when(metaData.containsDatabase(DefaultDatabase.LOGIC_NAME)).thenReturn(true);
+        when(metaData.getDatabase(DefaultDatabase.LOGIC_NAME)).thenReturn(mock(ShardingSphereDatabase.class));
+        return new QueryContext(new CreateTableStatementContext(createTableStatement, DefaultDatabase.LOGIC_NAME), "CREATE TABLE", new LinkedList<>(), new HintValueContext(), connectionContext,
+                metaData);
     }
 }

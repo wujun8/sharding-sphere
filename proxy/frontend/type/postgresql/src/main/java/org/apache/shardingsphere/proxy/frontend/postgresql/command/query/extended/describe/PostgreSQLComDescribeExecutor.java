@@ -237,12 +237,12 @@ public final class PostgreSQLComDescribeExecutor implements CommandExecutor {
     private void tryDescribePreparedStatementByJDBC(final PostgreSQLServerPreparedStatement logicPreparedStatement) throws SQLException {
         MetaDataContexts metaDataContexts = ProxyContext.getInstance().getContextManager().getMetaDataContexts();
         String databaseName = connectionSession.getUsedDatabaseName();
-        SQLStatementContext sqlStatementContext = new SQLBindEngine(metaDataContexts.getMetaData(), databaseName, logicPreparedStatement.getHintValueContext())
+        SQLStatementContext sqlStatementContext = new SQLBindEngine(metaDataContexts.getMetaData(), connectionSession.getCurrentDatabaseName(), logicPreparedStatement.getHintValueContext())
                 .bind(logicPreparedStatement.getSqlStatementContext().getSqlStatement(), Collections.emptyList());
-        QueryContext queryContext = new QueryContext(sqlStatementContext, logicPreparedStatement.getSql(), Collections.emptyList(), logicPreparedStatement.getHintValueContext());
-        ShardingSphereDatabase database = ProxyContext.getInstance().getContextManager().getDatabase(databaseName);
+        QueryContext queryContext = new QueryContext(sqlStatementContext, logicPreparedStatement.getSql(), Collections.emptyList(), logicPreparedStatement.getHintValueContext(),
+                connectionSession.getConnectionContext(), metaDataContexts.getMetaData());
         ExecutionContext executionContext = new KernelProcessor().generateExecutionContext(
-                queryContext, database, metaDataContexts.getMetaData().getGlobalRuleMetaData(), metaDataContexts.getMetaData().getProps(), connectionSession.getConnectionContext());
+                queryContext, metaDataContexts.getMetaData().getGlobalRuleMetaData(), metaDataContexts.getMetaData().getProps(), connectionSession.getConnectionContext());
         ExecutionUnit executionUnitSample = executionContext.getExecutionUnits().iterator().next();
         ProxyDatabaseConnectionManager databaseConnectionManager = connectionSession.getDatabaseConnectionManager();
         Connection connection = databaseConnectionManager.getConnections(databaseName, executionUnitSample.getDataSourceName(), 0, 1, ConnectionMode.CONNECTION_STRICTLY).iterator().next();

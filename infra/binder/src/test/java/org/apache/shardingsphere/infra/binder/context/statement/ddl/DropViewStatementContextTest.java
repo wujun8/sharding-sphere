@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.binder.context.statement.ddl;
 
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.DropViewStatement;
@@ -31,26 +32,24 @@ import java.util.Arrays;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class DropViewStatementContextTest {
     
     @Test
     void assertMySQLNewInstance() {
-        assertNewInstance(mock(MySQLDropViewStatement.class));
+        assertNewInstance(new MySQLDropViewStatement());
     }
     
     @Test
     void assertPostgreSQLNewInstance() {
-        assertNewInstance(mock(PostgreSQLDropViewStatement.class));
+        assertNewInstance(new PostgreSQLDropViewStatement());
     }
     
     private void assertNewInstance(final DropViewStatement dropViewStatement) {
         SimpleTableSegment table1 = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_1")));
         SimpleTableSegment table2 = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_2")));
-        when(dropViewStatement.getViews()).thenReturn(Arrays.asList(table1, table2));
-        DropViewStatementContext actual = new DropViewStatementContext(dropViewStatement);
+        dropViewStatement.getViews().addAll(Arrays.asList(table1, table2));
+        DropViewStatementContext actual = new DropViewStatementContext(dropViewStatement, DefaultDatabase.LOGIC_NAME);
         assertThat(actual, instanceOf(CommonSQLStatementContext.class));
         assertThat(actual.getSqlStatement(), is(dropViewStatement));
     }

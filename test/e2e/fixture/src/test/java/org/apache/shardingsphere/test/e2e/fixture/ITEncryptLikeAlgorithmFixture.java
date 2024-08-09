@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithmMetaData;
+import org.apache.shardingsphere.infra.algorithm.core.config.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.algorithm.core.context.AlgorithmSQLContext;
 import org.apache.shardingsphere.infra.algorithm.core.exception.AlgorithmInitializationException;
 
@@ -53,7 +54,7 @@ public final class ITEncryptLikeAlgorithmFixture implements EncryptAlgorithm {
     private static final int MAX_NUMERIC_LETTER_CHAR = 255;
     
     @Getter
-    private final EncryptAlgorithmMetaData metaData = new EncryptAlgorithmMetaData(false, true, true, new Properties());
+    private final EncryptAlgorithmMetaData metaData = new EncryptAlgorithmMetaData(false, true, true);
     
     private int delta;
     
@@ -159,6 +160,11 @@ public final class ITEncryptLikeAlgorithmFixture implements EncryptAlgorithm {
             return (char) (((charIndexes.get(originalChar) + delta) & mask) + start);
         }
         return (char) (((originalChar + delta) & mask) + start);
+    }
+    
+    @Override
+    public AlgorithmConfiguration toConfiguration() {
+        return new AlgorithmConfiguration(getType(), new Properties());
     }
     
     @Override

@@ -48,7 +48,6 @@ import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.rule.attribute.table.TableMapperRuleAttribute;
 import org.apache.shardingsphere.sql.parser.statement.core.enums.ParameterMarkerType;
 import org.apache.shardingsphere.sql.parser.statement.core.enums.SubqueryType;
-import org.apache.shardingsphere.sql.parser.statement.core.util.TableExtractor;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.BinaryOperationExpression;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.ExpressionSegment;
@@ -69,6 +68,7 @@ import org.apache.shardingsphere.sql.parser.statement.core.util.ColumnExtractUti
 import org.apache.shardingsphere.sql.parser.statement.core.util.ExpressionExtractUtils;
 import org.apache.shardingsphere.sql.parser.statement.core.util.SQLUtils;
 import org.apache.shardingsphere.sql.parser.statement.core.util.SubqueryExtractUtils;
+import org.apache.shardingsphere.sql.parser.statement.core.util.TableExtractor;
 import org.apache.shardingsphere.sql.parser.statement.core.util.WhereExtractUtils;
 import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 
@@ -112,15 +112,15 @@ public final class SelectStatementContext extends CommonSQLStatementContext impl
     
     private PaginationContext paginationContext;
     
-    public SelectStatementContext(final ShardingSphereMetaData metaData, final List<Object> params, final SelectStatement sqlStatement, final String currentDatabaseName,
-                                  final Collection<TableSegment> inheritedTables) {
+    public SelectStatementContext(final ShardingSphereMetaData metaData, final List<Object> params, final SelectStatement sqlStatement,
+                                  final String currentDatabaseName, final Collection<TableSegment> inheritedTables) {
         super(sqlStatement);
         extractWhereSegments(whereSegments, sqlStatement);
         ColumnExtractUtils.extractColumnSegments(columnSegments, whereSegments);
         Collection<TableSegment> tableSegments = getAllTableSegments(inheritedTables);
         ExpressionExtractUtils.extractJoinConditions(joinConditions, whereSegments);
         subqueryContexts = createSubqueryContexts(metaData, params, currentDatabaseName, tableSegments);
-        tablesContext = new TablesContext(tableSegments, subqueryContexts, getDatabaseType());
+        tablesContext = new TablesContext(tableSegments, subqueryContexts, getDatabaseType(), currentDatabaseName);
         groupByContext = new GroupByContextEngine().createGroupByContext(sqlStatement);
         orderByContext = new OrderByContextEngine().createOrderBy(sqlStatement, groupByContext);
         projectionsContext = new ProjectionsContextEngine(getDatabaseType()).createProjectionsContext(getSqlStatement().getProjections(), groupByContext, orderByContext);

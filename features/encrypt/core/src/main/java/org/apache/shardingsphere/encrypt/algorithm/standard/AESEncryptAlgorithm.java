@@ -17,17 +17,15 @@
 
 package org.apache.shardingsphere.encrypt.algorithm.standard;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithmMetaData;
+import org.apache.shardingsphere.infra.algorithm.core.config.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.algorithm.core.context.AlgorithmSQLContext;
 import org.apache.shardingsphere.infra.algorithm.core.exception.AlgorithmInitializationException;
 import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
-import org.apache.shardingsphere.infra.util.props.MultiSourceProperties;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -40,7 +38,6 @@ import java.util.Properties;
 /**
  * AES encrypt algorithm.
  */
-@EqualsAndHashCode
 public final class AESEncryptAlgorithm implements EncryptAlgorithm {
     
     private static final String AES_KEY = "aes-key-value";
@@ -48,26 +45,23 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm {
     private static final String DIGEST_ALGORITHM_NAME = "digest-algorithm-name";
     
     @Getter
-    private final EncryptAlgorithmMetaData metaData = new EncryptAlgorithmMetaData(true, true, false, getDefaultProperties());
+    private final EncryptAlgorithmMetaData metaData = new EncryptAlgorithmMetaData(true, true, false);
+    
+    private Properties props;
     
     private byte[] secretKey;
     
-    private Properties getDefaultProperties() {
-        Properties result = new Properties();
-        result.setProperty(DIGEST_ALGORITHM_NAME, MessageDigestAlgorithms.SHA_1);
-        return result;
-    }
-    
     @Override
     public void init(final Properties props) {
-        Properties multiSourceProperties = new MultiSourceProperties(props, metaData.getDefaultProps());
-        secretKey = getSecretKey(multiSourceProperties);
+        this.props = props;
+        secretKey = getSecretKey(props);
     }
     
     private byte[] getSecretKey(final Properties props) {
         String aesKey = props.getProperty(AES_KEY);
         ShardingSpherePreconditions.checkNotEmpty(aesKey, () -> new AlgorithmInitializationException(this, "%s can not be null or empty", AES_KEY));
         String digestAlgorithm = props.getProperty(DIGEST_ALGORITHM_NAME);
+        ShardingSpherePreconditions.checkNotEmpty(digestAlgorithm, () -> new AlgorithmInitializationException(this, "%s can not be null or empty", DIGEST_ALGORITHM_NAME));
         return Arrays.copyOf(DigestUtils.getDigest(digestAlgorithm.toUpperCase()).digest(aesKey.getBytes(StandardCharsets.UTF_8)), 16);
     }
     
@@ -95,6 +89,11 @@ public final class AESEncryptAlgorithm implements EncryptAlgorithm {
         Cipher result = Cipher.getInstance(getType());
         result.init(decryptMode, new SecretKeySpec(secretKey, getType()));
         return result;
+    }
+    
+    @Override
+    public AlgorithmConfiguration toConfiguration() {
+        return new AlgorithmConfiguration(getType(), props);
     }
     
     @Override

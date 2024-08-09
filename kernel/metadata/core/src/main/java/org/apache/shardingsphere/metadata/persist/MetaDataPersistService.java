@@ -24,6 +24,9 @@ import org.apache.shardingsphere.infra.config.rule.decorator.RuleConfigurationDe
 import org.apache.shardingsphere.infra.datasource.pool.config.DataSourceConfiguration;
 import org.apache.shardingsphere.infra.datasource.pool.props.creator.DataSourcePoolPropertiesCreator;
 import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
+import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
+import org.apache.shardingsphere.infra.metadata.database.schema.manager.GenericSchemaManager;
+import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.rule.ShardingSphereRule;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.metadata.persist.data.ShardingSphereDataPersistService;
@@ -136,5 +139,33 @@ public final class MetaDataPersistService {
     public Map<String, DataSourceConfiguration> loadDataSourceConfigurations(final String databaseName) {
         return dataSourceUnitService.load(databaseName).entrySet().stream().collect(Collectors.toMap(Entry::getKey,
                 entry -> DataSourcePoolPropertiesCreator.createConfiguration(entry.getValue()), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+    }
+    
+    /**
+     * Persist reload meta data by alter.
+     *
+     * @param databaseName database name
+     * @param reloadDatabase reload database
+     * @param currentDatabase current database
+     */
+    public void persistReloadDatabaseByAlter(final String databaseName, final ShardingSphereDatabase reloadDatabase, final ShardingSphereDatabase currentDatabase) {
+        Map<String, ShardingSphereSchema> toBeDeletedSchemas = GenericSchemaManager.getToBeDeletedTablesBySchemas(reloadDatabase.getSchemas(), currentDatabase.getSchemas());
+        Map<String, ShardingSphereSchema> toBeAddedSchemas = GenericSchemaManager.getToBeAddedTablesBySchemas(reloadDatabase.getSchemas(), currentDatabase.getSchemas());
+        toBeAddedSchemas.forEach((key, value) -> databaseMetaDataService.persistByAlterConfiguration(databaseName, key, value));
+        toBeDeletedSchemas.forEach((key, value) -> databaseMetaDataService.delete(databaseName, key, value));
+    }
+    
+    /**
+     * Persist reload meta data by drop.
+     *
+     * @param databaseName database name
+     * @param reloadDatabase reload database
+     * @param currentDatabase current database
+     */
+    public void persistReloadDatabaseByDrop(final String databaseName, final ShardingSphereDatabase reloadDatabase, final ShardingSphereDatabase currentDatabase) {
+        Map<String, ShardingSphereSchema> toBeAlterSchemas = GenericSchemaManager.getToBeDeletedTablesBySchemas(reloadDatabase.getSchemas(), currentDatabase.getSchemas());
+        Map<String, ShardingSphereSchema> toBeAddedSchemas = GenericSchemaManager.getToBeAddedTablesBySchemas(reloadDatabase.getSchemas(), currentDatabase.getSchemas());
+        toBeAddedSchemas.forEach((key, value) -> databaseMetaDataService.persistByDropConfiguration(databaseName, key, value));
+        toBeAlterSchemas.forEach((key, value) -> databaseMetaDataService.delete(databaseName, key, value));
     }
 }

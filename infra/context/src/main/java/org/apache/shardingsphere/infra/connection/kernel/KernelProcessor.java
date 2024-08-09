@@ -17,6 +17,8 @@
 
 package org.apache.shardingsphere.infra.connection.kernel;
 
+import org.apache.shardingsphere.infra.annotation.HighFrequencyInvocation;
+import org.apache.shardingsphere.infra.checker.SupportedSQLCheckEngine;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.executor.sql.context.ExecutionContext;
@@ -34,40 +36,46 @@ import org.apache.shardingsphere.infra.session.query.QueryContext;
 /**
  * Kernel processor.
  */
+@HighFrequencyInvocation
 public final class KernelProcessor {
     
     /**
      * Generate execution context.
      *
      * @param queryContext query context
-     * @param database database
      * @param globalRuleMetaData global rule meta data
      * @param props configuration properties
      * @param connectionContext connection context
      * @return execution context
      */
-    public ExecutionContext generateExecutionContext(final QueryContext queryContext, final ShardingSphereDatabase database, final RuleMetaData globalRuleMetaData,
+    public ExecutionContext generateExecutionContext(final QueryContext queryContext, final RuleMetaData globalRuleMetaData,
                                                      final ConfigurationProperties props, final ConnectionContext connectionContext) {
-        RouteContext routeContext = route(queryContext, database, globalRuleMetaData, props, connectionContext);
-        SQLRewriteResult rewriteResult = rewrite(queryContext, database, globalRuleMetaData, props, routeContext, connectionContext);
-        ExecutionContext result = createExecutionContext(queryContext, database, routeContext, rewriteResult);
+        check(queryContext);
+        RouteContext routeContext = route(queryContext, globalRuleMetaData, props, connectionContext);
+        SQLRewriteResult rewriteResult = rewrite(queryContext, globalRuleMetaData, props, routeContext, connectionContext);
+        ExecutionContext result = createExecutionContext(queryContext, routeContext, rewriteResult);
         logSQL(queryContext, props, result);
         return result;
     }
     
-    private RouteContext route(final QueryContext queryContext, final ShardingSphereDatabase database,
-                               final RuleMetaData globalRuleMetaData, final ConfigurationProperties props, final ConnectionContext connectionContext) {
+    private void check(final QueryContext queryContext) {
+        ShardingSphereDatabase database = queryContext.getUsedDatabase();
+        new SupportedSQLCheckEngine().checkSQL(database.getRuleMetaData().getRules(), queryContext.getSqlStatementContext(), database.getSchemas(), database.getName());
+    }
+    
+    private RouteContext route(final QueryContext queryContext, final RuleMetaData globalRuleMetaData, final ConfigurationProperties props, final ConnectionContext connectionContext) {
+        ShardingSphereDatabase database = queryContext.getUsedDatabase();
         return new SQLRouteEngine(database.getRuleMetaData().getRules(), props).route(connectionContext, queryContext, globalRuleMetaData, database);
     }
     
-    private SQLRewriteResult rewrite(final QueryContext queryContext, final ShardingSphereDatabase database, final RuleMetaData globalRuleMetaData,
-                                     final ConfigurationProperties props, final RouteContext routeContext, final ConnectionContext connectionContext) {
-        SQLRewriteEntry sqlRewriteEntry = new SQLRewriteEntry(database, globalRuleMetaData, props);
+    private SQLRewriteResult rewrite(final QueryContext queryContext, final RuleMetaData globalRuleMetaData, final ConfigurationProperties props, final RouteContext routeContext,
+                                     final ConnectionContext connectionContext) {
+        SQLRewriteEntry sqlRewriteEntry = new SQLRewriteEntry(queryContext.getUsedDatabase(), globalRuleMetaData, props);
         return sqlRewriteEntry.rewrite(queryContext, routeContext, connectionContext);
     }
     
-    private ExecutionContext createExecutionContext(final QueryContext queryContext, final ShardingSphereDatabase database, final RouteContext routeContext, final SQLRewriteResult rewriteResult) {
-        return new ExecutionContext(queryContext, ExecutionContextBuilder.build(database, rewriteResult, queryContext.getSqlStatementContext()), routeContext);
+    private ExecutionContext createExecutionContext(final QueryContext queryContext, final RouteContext routeContext, final SQLRewriteResult rewriteResult) {
+        return new ExecutionContext(queryContext, ExecutionContextBuilder.build(queryContext.getUsedDatabase(), rewriteResult, queryContext.getSqlStatementContext()), routeContext);
     }
     
     private void logSQL(final QueryContext queryContext, final ConfigurationProperties props, final ExecutionContext executionContext) {

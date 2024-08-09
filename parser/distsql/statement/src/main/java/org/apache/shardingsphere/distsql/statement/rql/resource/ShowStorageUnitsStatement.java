@@ -33,6 +33,8 @@ public final class ShowStorageUnitsStatement extends ResourceQueryStatement impl
     
     private final DatabaseSegment database;
     
+    private final String likePattern;
+    
     private final Integer usageCount;
     
     @Override
@@ -41,8 +43,17 @@ public final class ShowStorageUnitsStatement extends ResourceQueryStatement impl
     }
     
     /**
+     * Get like pattern.
+     *
+     * @return like pattern
+     */
+    public Optional<String> getLikePattern() {
+        return Optional.ofNullable(likePattern);
+    }
+    
+    /**
      * Get usage count.
-     * 
+     *
      * @return usage count
      */
     public Optional<Integer> getUsageCount() {

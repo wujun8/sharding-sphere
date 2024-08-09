@@ -31,7 +31,7 @@ import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.rewrite.context.SQLRewriteContext;
 import org.apache.shardingsphere.infra.rewrite.context.SQLRewriteContextDecorator;
 import org.apache.shardingsphere.infra.rewrite.parameter.rewriter.ParameterRewriter;
-import org.apache.shardingsphere.infra.rewrite.sql.token.generator.SQLTokenGenerator;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.generator.builder.SQLTokenGeneratorBuilder;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.predicate.WhereSegment;
@@ -58,19 +58,8 @@ public final class EncryptSQLRewriteContextDecorator implements SQLRewriteContex
                     new EncryptParameterRewriterBuilder(encryptRule, databaseName, sqlRewriteContext.getDatabase().getSchemas(), sqlStatementContext, encryptConditions).getParameterRewriters();
             rewriteParameters(sqlRewriteContext, parameterRewriters);
         }
-        Collection<SQLTokenGenerator> sqlTokenGenerators = new EncryptTokenGenerateBuilder(encryptRule, sqlStatementContext, encryptConditions, databaseName).getSQLTokenGenerators();
-        sqlRewriteContext.addSQLTokenGenerators(sqlTokenGenerators);
-    }
-    
-    private Collection<EncryptCondition> createEncryptConditions(final EncryptRule encryptRule, final SQLRewriteContext sqlRewriteContext) {
-        SQLStatementContext sqlStatementContext = sqlRewriteContext.getSqlStatementContext();
-        if (!(sqlStatementContext instanceof WhereAvailable)) {
-            return Collections.emptyList();
-        }
-        Collection<WhereSegment> whereSegments = ((WhereAvailable) sqlStatementContext).getWhereSegments();
-        Collection<ColumnSegment> columnSegments = ((WhereAvailable) sqlStatementContext).getColumnSegments();
-        return new EncryptConditionEngine(encryptRule, sqlRewriteContext.getDatabase().getSchemas()).createEncryptConditions(whereSegments, columnSegments, sqlStatementContext,
-                sqlRewriteContext.getDatabase().getName());
+        SQLTokenGeneratorBuilder sqlTokenGeneratorBuilder = new EncryptTokenGenerateBuilder(encryptRule, sqlStatementContext, encryptConditions, databaseName);
+        sqlRewriteContext.addSQLTokenGenerators(sqlTokenGeneratorBuilder.getSQLTokenGenerators());
     }
     
     private boolean containsEncryptTable(final EncryptRule encryptRule, final SQLStatementContext sqlStatementContext) {
@@ -83,6 +72,17 @@ public final class EncryptSQLRewriteContextDecorator implements SQLRewriteContex
             }
         }
         return false;
+    }
+    
+    private Collection<EncryptCondition> createEncryptConditions(final EncryptRule encryptRule, final SQLRewriteContext sqlRewriteContext) {
+        SQLStatementContext sqlStatementContext = sqlRewriteContext.getSqlStatementContext();
+        if (!(sqlStatementContext instanceof WhereAvailable)) {
+            return Collections.emptyList();
+        }
+        Collection<WhereSegment> whereSegments = ((WhereAvailable) sqlStatementContext).getWhereSegments();
+        Collection<ColumnSegment> columnSegments = ((WhereAvailable) sqlStatementContext).getColumnSegments();
+        return new EncryptConditionEngine(encryptRule, sqlRewriteContext.getDatabase().getSchemas())
+                .createEncryptConditions(whereSegments, columnSegments, sqlStatementContext, sqlRewriteContext.getDatabase().getName());
     }
     
     private void rewriteParameters(final SQLRewriteContext sqlRewriteContext, final Collection<ParameterRewriter> parameterRewriters) {

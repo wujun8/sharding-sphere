@@ -35,17 +35,18 @@
         <module>common</module>
         <module>context</module>
         <module>url</module>
+        <module>algorithm</module>
         <module>distsql-handler</module>
         <module>parser</module>
         <module>binder</module>
-        <module>rewrite</module>
+        <module>checker</module>
         <module>route</module>
+        <module>rewrite</module>
         <module>merge</module>
         <module>executor</module>
         <module>session</module>
         <module>expr</module>
         <module>util</module>
         <module>reachability-metadata</module>
-        <module>algorithm</module>
     </modules>
 </project>

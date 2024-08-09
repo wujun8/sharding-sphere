@@ -25,11 +25,10 @@ import org.apache.shardingsphere.infra.metadata.database.schema.builder.GenericS
 import org.apache.shardingsphere.infra.metadata.database.schema.builder.GenericSchemaBuilderMaterial;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereTable;
-import org.apache.shardingsphere.infra.metadata.database.schema.pojo.AlterSchemaMetaDataPOJO;
 import org.apache.shardingsphere.infra.rule.attribute.datanode.MutableDataNodeRuleAttribute;
 import org.apache.shardingsphere.mode.metadata.refresher.MetaDataRefresher;
 import org.apache.shardingsphere.mode.metadata.refresher.util.TableRefreshUtils;
-import org.apache.shardingsphere.mode.service.persist.MetaDataManagerPersistService;
+import org.apache.shardingsphere.mode.persist.service.MetaDataManagerPersistService;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.ddl.CreateTableStatement;
 
 import java.sql.SQLException;
@@ -58,9 +57,7 @@ public final class CreateTableStatementSchemaRefresher implements MetaDataRefres
         Map<String, ShardingSphereSchema> schemaMap = GenericSchemaBuilder.build(Collections.singletonList(tableName), material);
         Optional<ShardingSphereTable> actualTableMetaData = Optional.ofNullable(schemaMap.get(schemaName)).map(optional -> optional.getTable(tableName));
         if (actualTableMetaData.isPresent()) {
-            AlterSchemaMetaDataPOJO alterSchemaMetaDataPOJO = new AlterSchemaMetaDataPOJO(database.getName(), schemaName, logicDataSourceNames);
-            alterSchemaMetaDataPOJO.getAlteredTables().add(actualTableMetaData.get());
-            metaDataManagerPersistService.alterSchemaMetaData(alterSchemaMetaDataPOJO);
+            metaDataManagerPersistService.createTable(database.getName(), schemaName, actualTableMetaData.get(), logicDataSourceNames.isEmpty() ? null : logicDataSourceNames.iterator().next());
             if (isSingleTable && TableRefreshUtils.isRuleRefreshRequired(ruleMetaData, schemaName, tableName)) {
                 metaDataManagerPersistService.alterSingleRuleConfiguration(database.getName(), ruleMetaData.getConfigurations());
             }

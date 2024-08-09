@@ -17,7 +17,7 @@
 
 package org.apache.shardingsphere.test.e2e.engine.arg;
 
-import org.apache.shardingsphere.test.e2e.cases.SQLCommandType;
+import org.apache.shardingsphere.test.e2e.framework.type.SQLCommandType;
 import org.apache.shardingsphere.test.e2e.framework.E2EExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -42,7 +42,7 @@ public @interface E2ETestCaseSettings {
     
     /**
      * Is batch execute.
-     * 
+     *
      * @return batch execute or not
      */
     boolean batch() default false;

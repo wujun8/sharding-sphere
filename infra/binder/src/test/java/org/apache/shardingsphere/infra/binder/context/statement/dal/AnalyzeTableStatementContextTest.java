@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.binder.context.statement.dal;
 
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.dal.AnalyzeTableStatement;
@@ -27,36 +28,29 @@ import org.apache.shardingsphere.sql.parser.statement.postgresql.dal.PostgreSQLA
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class AnalyzeTableStatementContextTest {
     
     @Test
     void assertMysqlNewInstance() {
-        assertNewInstance(mock(MySQLAnalyzeTableStatement.class));
+        assertNewInstance(new MySQLAnalyzeTableStatement());
     }
     
     @Test
     void assertPostgreSQLNewInstance() {
-        assertNewInstance(mock(PostgreSQLAnalyzeTableStatement.class));
+        assertNewInstance(new PostgreSQLAnalyzeTableStatement());
     }
     
     private void assertNewInstance(final AnalyzeTableStatement analyzeTableStatement) {
         SimpleTableSegment table1 = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_1")));
         SimpleTableSegment table2 = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_2")));
-        List<SimpleTableSegment> tables = new LinkedList<>();
-        tables.add(table1);
-        tables.add(table2);
-        when(analyzeTableStatement.getTables()).thenReturn(tables);
-        AnalyzeTableStatementContext actual = new AnalyzeTableStatementContext(analyzeTableStatement);
+        analyzeTableStatement.getTables().addAll(Arrays.asList(table1, table2));
+        AnalyzeTableStatementContext actual = new AnalyzeTableStatementContext(analyzeTableStatement, DefaultDatabase.LOGIC_NAME);
         assertThat(actual, instanceOf(CommonSQLStatementContext.class));
         assertThat(actual.getSqlStatement(), is(analyzeTableStatement));
         assertThat(actual.getTablesContext().getSimpleTables().stream().map(each -> each.getTableName().getIdentifier().getValue()).collect(Collectors.toList()), is(Arrays.asList("tbl_1", "tbl_2")));

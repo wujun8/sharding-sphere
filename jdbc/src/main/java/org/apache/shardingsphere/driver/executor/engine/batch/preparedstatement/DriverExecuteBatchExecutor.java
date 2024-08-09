@@ -81,7 +81,7 @@ public final class DriverExecuteBatchExecutor {
     
     /**
      * Add batch.
-     * 
+     *
      * @param queryContext query context
      * @param database database
      */
@@ -93,12 +93,12 @@ public final class DriverExecuteBatchExecutor {
     private ExecutionContext createExecutionContext(final QueryContext queryContext, final ShardingSphereDatabase database) {
         RuleMetaData globalRuleMetaData = metaData.getGlobalRuleMetaData();
         SQLAuditEngine.audit(queryContext, globalRuleMetaData, database);
-        return new KernelProcessor().generateExecutionContext(queryContext, database, globalRuleMetaData, metaData.getProps(), connection.getDatabaseConnectionManager().getConnectionContext());
+        return new KernelProcessor().generateExecutionContext(queryContext, globalRuleMetaData, metaData.getProps(), connection.getDatabaseConnectionManager().getConnectionContext());
     }
     
     /**
      * Execute batch.
-     * 
+     *
      * @param database database
      * @param sqlStatementContext SQL statement context
      * @param generatedValues generated values

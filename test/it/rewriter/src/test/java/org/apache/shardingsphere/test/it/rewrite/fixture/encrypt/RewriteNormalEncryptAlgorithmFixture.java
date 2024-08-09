@@ -20,6 +20,7 @@ package org.apache.shardingsphere.test.it.rewrite.fixture.encrypt;
 import lombok.Getter;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithm;
 import org.apache.shardingsphere.encrypt.spi.EncryptAlgorithmMetaData;
+import org.apache.shardingsphere.infra.algorithm.core.config.AlgorithmConfiguration;
 import org.apache.shardingsphere.infra.algorithm.core.context.AlgorithmSQLContext;
 
 import java.util.Properties;
@@ -27,7 +28,7 @@ import java.util.Properties;
 @Getter
 public final class RewriteNormalEncryptAlgorithmFixture implements EncryptAlgorithm {
     
-    private final EncryptAlgorithmMetaData metaData = new EncryptAlgorithmMetaData(true, true, false, new Properties());
+    private final EncryptAlgorithmMetaData metaData = new EncryptAlgorithmMetaData(true, true, false);
     
     @Override
     public String encrypt(final Object plainValue, final AlgorithmSQLContext algorithmSQLContext) {
@@ -43,6 +44,11 @@ public final class RewriteNormalEncryptAlgorithmFixture implements EncryptAlgori
             return null;
         }
         return cipherValue.toString().replaceAll("encrypt_", "");
+    }
+    
+    @Override
+    public AlgorithmConfiguration toConfiguration() {
+        return new AlgorithmConfiguration(getType(), new Properties());
     }
     
     @Override

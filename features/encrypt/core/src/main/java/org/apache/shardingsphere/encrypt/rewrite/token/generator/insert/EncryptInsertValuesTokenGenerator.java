@@ -18,27 +18,27 @@
 package org.apache.shardingsphere.encrypt.rewrite.token.generator.insert;
 
 import com.google.common.base.Preconditions;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.shardingsphere.encrypt.rewrite.aware.DatabaseNameAware;
-import org.apache.shardingsphere.encrypt.rewrite.aware.EncryptRuleAware;
 import org.apache.shardingsphere.encrypt.rewrite.token.pojo.EncryptInsertValuesToken;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
-import org.apache.shardingsphere.encrypt.rule.EncryptTable;
 import org.apache.shardingsphere.encrypt.rule.column.EncryptColumn;
 import org.apache.shardingsphere.encrypt.rule.column.item.AssistedQueryColumnItem;
 import org.apache.shardingsphere.encrypt.rule.column.item.LikeQueryColumnItem;
+import org.apache.shardingsphere.encrypt.rule.table.EncryptTable;
 import org.apache.shardingsphere.infra.binder.context.segment.insert.values.InsertValueContext;
 import org.apache.shardingsphere.infra.binder.context.segment.insert.values.expression.DerivedLiteralExpressionSegment;
 import org.apache.shardingsphere.infra.binder.context.segment.insert.values.expression.DerivedParameterMarkerExpressionSegment;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseTypeRegistry;
-import org.apache.shardingsphere.infra.rewrite.sql.token.generator.OptionalSQLTokenGenerator;
-import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.PreviousSQLTokensAware;
-import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
-import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.InsertValue;
-import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.InsertValuesToken;
-import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.UseDefaultInsertColumnsToken;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.generator.OptionalSQLTokenGenerator;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.generator.aware.PreviousSQLTokensAware;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.pojo.SQLToken;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.pojo.generic.InsertValue;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.pojo.generic.InsertValuesToken;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.pojo.generic.UseDefaultInsertColumnsToken;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.assignment.InsertValuesSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.expr.ExpressionSegment;
@@ -54,12 +54,13 @@ import java.util.Optional;
 /**
  * Insert values token generator for encrypt.
  */
+@RequiredArgsConstructor
 @Setter
-public final class EncryptInsertValuesTokenGenerator implements OptionalSQLTokenGenerator<InsertStatementContext>, PreviousSQLTokensAware, EncryptRuleAware, DatabaseNameAware {
+public final class EncryptInsertValuesTokenGenerator implements OptionalSQLTokenGenerator<InsertStatementContext>, PreviousSQLTokensAware, DatabaseNameAware {
+    
+    private final EncryptRule encryptRule;
     
     private List<SQLToken> previousSQLTokens;
-    
-    private EncryptRule encryptRule;
     
     private String databaseName;
     
@@ -200,8 +201,8 @@ public final class EncryptInsertValuesTokenGenerator implements OptionalSQLToken
         ColumnSegment result = new ColumnSegment(originalColumn.getStartIndex(), originalColumn.getStopIndex(), new IdentifierValue(columnName, originalColumn.getIdentifier().getQuoteCharacter()));
         result.setNestedObjectAttributes(originalColumn.getNestedObjectAttributes());
         originalColumn.getOwner().ifPresent(result::setOwner);
-        result.setColumnBoundedInfo(originalColumn.getColumnBoundedInfo());
-        result.setOtherUsingColumnBoundedInfo(originalColumn.getOtherUsingColumnBoundedInfo());
+        result.setColumnBoundInfo(originalColumn.getColumnBoundInfo());
+        result.setOtherUsingColumnBoundInfo(originalColumn.getOtherUsingColumnBoundInfo());
         result.setVariable(originalColumn.isVariable());
         return result;
     }

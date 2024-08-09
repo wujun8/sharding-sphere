@@ -120,16 +120,17 @@ public final class MySQLMultiStatementsHandler implements ProxyBackendHandler {
         HintValueContext hintValueContext = SQLHintUtils.extractHint(sql);
         SQLStatementContext sqlStatementContext =
                 new SQLBindEngine(metaDataContexts.getMetaData(), connectionSession.getUsedDatabaseName(), hintValueContext).bind(sqlStatement, Collections.emptyList());
-        return new QueryContext(sqlStatementContext, sql, Collections.emptyList(), hintValueContext);
+        return new QueryContext(sqlStatementContext, sql, Collections.emptyList(), hintValueContext, connectionSession.getConnectionContext(), metaDataContexts.getMetaData());
     }
     
     @Override
     public ResponseHeader execute() throws SQLException {
         Collection<ShardingSphereRule> rules = metaDataContexts.getMetaData().getDatabase(connectionSession.getUsedDatabaseName()).getRuleMetaData().getRules();
-        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = new DriverExecutionPrepareEngine<>(JDBCDriverType.STATEMENT, metaDataContexts.getMetaData().getProps()
-                .<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY), connectionSession.getDatabaseConnectionManager(),
-                (JDBCBackendStatement) connectionSession.getStatementManager(), new StatementOption(false), rules,
-                metaDataContexts.getMetaData().getDatabase(connectionSession.getUsedDatabaseName()).getResourceMetaData().getStorageUnits());
+        int maxConnectionsSizePerQuery = metaDataContexts.getMetaData().getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
+        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine =
+                new DriverExecutionPrepareEngine<>(JDBCDriverType.STATEMENT, maxConnectionsSizePerQuery, connectionSession.getDatabaseConnectionManager(),
+                        (JDBCBackendStatement) connectionSession.getStatementManager(), new StatementOption(false), rules,
+                        metaDataContexts.getMetaData().getDatabase(connectionSession.getUsedDatabaseName()).getResourceMetaData().getStorageUnits());
         return executeMultiStatements(prepareEngine);
     }
     
@@ -169,7 +170,7 @@ public final class MySQLMultiStatementsHandler implements ProxyBackendHandler {
         RuleMetaData globalRuleMetaData = metaDataContexts.getMetaData().getGlobalRuleMetaData();
         ShardingSphereDatabase currentDatabase = metaDataContexts.getMetaData().getDatabase(connectionSession.getUsedDatabaseName());
         SQLAuditEngine.audit(queryContext, globalRuleMetaData, currentDatabase);
-        return kernelProcessor.generateExecutionContext(queryContext, currentDatabase, globalRuleMetaData, metaDataContexts.getMetaData().getProps(), connectionSession.getConnectionContext());
+        return kernelProcessor.generateExecutionContext(queryContext, globalRuleMetaData, metaDataContexts.getMetaData().getProps(), connectionSession.getConnectionContext());
     }
     
     private Collection<ExecutionUnit> samplingExecutionUnit(final Map<String, List<ExecutionUnit>> dataSourcesToExecutionUnits) {

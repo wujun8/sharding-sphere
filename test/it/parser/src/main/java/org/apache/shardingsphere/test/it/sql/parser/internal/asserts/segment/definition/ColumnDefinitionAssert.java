@@ -37,7 +37,7 @@ public final class ColumnDefinitionAssert {
     
     /**
      * Assert actual column definition segment is correct with expected column definition.
-     * 
+     *
      * @param assertContext assert context
      * @param actual actual column definition segment
      * @param expected expected column definition
@@ -55,5 +55,8 @@ public final class ColumnDefinitionAssert {
         TableAssert.assertIs(assertContext, actual.getReferencedTables(), expected.getReferencedTables());
         assertThat(assertContext.getText("Column definition start index assertion error: "), actual.getStartIndex(), is(expected.getStartIndex()));
         assertThat(assertContext.getText("Column definition stop index assertion error: "), actual.getStopIndex(), is(expected.getStopIndex()));
+        if (expected.isNotNull()) {
+            assertThat(assertContext.getText("Column definition not null assertion error: "), actual.isNotNull(), is(expected.isNotNull()));
+        }
     }
 }

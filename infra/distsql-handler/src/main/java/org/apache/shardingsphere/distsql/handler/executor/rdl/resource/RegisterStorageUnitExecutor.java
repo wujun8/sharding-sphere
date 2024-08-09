@@ -25,6 +25,7 @@ import org.apache.shardingsphere.distsql.handler.validate.DistSQLDataSourcePoolP
 import org.apache.shardingsphere.distsql.segment.DataSourceSegment;
 import org.apache.shardingsphere.distsql.segment.converter.DataSourceSegmentsConverter;
 import org.apache.shardingsphere.distsql.statement.rdl.resource.unit.type.RegisterStorageUnitStatement;
+import org.apache.shardingsphere.infra.database.core.checker.PrivilegeCheckType;
 import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
 import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
 import org.apache.shardingsphere.infra.exception.core.external.ShardingSphereExternalException;
@@ -65,7 +66,7 @@ public final class RegisterStorageUnitExecutor implements DistSQLUpdateExecutor<
         if (propsMap.isEmpty()) {
             return;
         }
-        validateHandler.validate(propsMap);
+        validateHandler.validate(propsMap, getExpectedPrivileges(sqlStatement));
         try {
             contextManager.getPersistServiceFacade().getMetaDataManagerPersistService().registerStorageUnits(database.getName(), propsMap);
         } catch (final SQLException | ShardingSphereExternalException ex) {
@@ -107,6 +108,14 @@ public final class RegisterStorageUnitExecutor implements DistSQLUpdateExecutor<
     
     private Collection<String> getLogicalDataSourceNames() {
         return database.getRuleMetaData().getAttributes(DataSourceMapperRuleAttribute.class).stream().flatMap(each -> each.getDataSourceMapper().keySet().stream()).collect(Collectors.toList());
+    }
+    
+    private Collection<PrivilegeCheckType> getExpectedPrivileges(final RegisterStorageUnitStatement sqlStatement) {
+        Collection<PrivilegeCheckType> result = sqlStatement.getExpectedPrivileges().stream().map(each -> PrivilegeCheckType.valueOf(each.toUpperCase())).collect(Collectors.toSet());
+        if (result.isEmpty()) {
+            result.add(PrivilegeCheckType.SELECT);
+        }
+        return result;
     }
     
     @Override

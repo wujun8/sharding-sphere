@@ -22,7 +22,6 @@ import org.apache.shardingsphere.infra.binder.context.statement.ddl.CreateTableS
 import org.apache.shardingsphere.infra.binder.context.statement.ddl.CursorStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.ddl.TruncateStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.dml.InsertStatementContext;
-import org.apache.shardingsphere.infra.binder.context.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.binder.context.type.TableAvailable;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
@@ -40,6 +39,7 @@ import org.apache.shardingsphere.infra.metadata.database.resource.ResourceMetaDa
 import org.apache.shardingsphere.infra.metadata.database.rule.RuleMetaData;
 import org.apache.shardingsphere.infra.metadata.database.schema.model.ShardingSphereSchema;
 import org.apache.shardingsphere.infra.route.context.RouteContext;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.metadata.persist.MetaDataPersistService;
@@ -48,16 +48,12 @@ import org.apache.shardingsphere.mode.metadata.MetaDataContextsFactory;
 import org.apache.shardingsphere.mode.spi.PersistRepository;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.session.ConnectionSession;
-import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.item.ProjectionsSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
-import org.apache.shardingsphere.sql.parser.statement.core.statement.dml.SelectStatement;
 import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 import org.apache.shardingsphere.sql.parser.statement.mysql.ddl.MySQLCreateTableStatement;
 import org.apache.shardingsphere.sql.parser.statement.mysql.ddl.MySQLTruncateStatement;
 import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLInsertStatement;
-import org.apache.shardingsphere.sql.parser.statement.mysql.dml.MySQLSelectStatement;
-import org.apache.shardingsphere.sql.parser.statement.opengauss.ddl.OpenGaussCursorStatement;
 import org.apache.shardingsphere.sql.parser.statement.postgresql.ddl.PostgreSQLCreateTableStatement;
 import org.apache.shardingsphere.sql.parser.statement.postgresql.ddl.PostgreSQLTruncateStatement;
 import org.apache.shardingsphere.sql.parser.statement.postgresql.dml.PostgreSQLInsertStatement;
@@ -122,15 +118,23 @@ class ProxySQLExecutorTest {
     @Test
     void assertCheckExecutePrerequisitesWhenExecuteDDLInXATransaction() {
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         assertThrows(TableModifyInTransactionException.class,
                 () -> new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext));
+    }
+    
+    private ConnectionContext mockConnectionContext() {
+        ConnectionContext result = mock(ConnectionContext.class);
+        when(result.getCurrentDatabaseName()).thenReturn(Optional.of(DefaultDatabase.LOGIC_NAME));
+        return result;
     }
     
     @Test
     void assertCheckExecutePrerequisitesWhenExecuteTruncateInMySQLXATransaction() {
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLTruncateStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLTruncateStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         assertThrows(TableModifyInTransactionException.class,
                 () -> new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext));
     }
@@ -139,14 +143,16 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteTruncateInMySQLLocalTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLTruncateStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLTruncateStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
     @Test
     void assertCheckExecutePrerequisitesWhenExecuteDMLInXATransaction() {
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLInsertStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLInsertStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -154,7 +160,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteDDLInBaseTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.BASE);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -162,7 +169,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteDDLNotInXATransaction() {
         when(connectionSession.getTransactionStatus().isInTransaction()).thenReturn(false);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -170,7 +178,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteDDLInPostgreSQLTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createPostgreSQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createPostgreSQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         assertThrows(TableModifyInTransactionException.class,
                 () -> new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext));
     }
@@ -179,7 +188,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteTruncateInPostgreSQLTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createPostgreSQLTruncateStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createPostgreSQLTruncateStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -187,7 +197,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteCursorInPostgreSQLTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createCursorStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createCursorStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -195,7 +206,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteDMLInPostgreSQLTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createPostgreSQLInsertStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createPostgreSQLInsertStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -203,7 +215,8 @@ class ProxySQLExecutorTest {
     void assertCheckExecutePrerequisitesWhenExecuteDDLInMySQLTransaction() {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createMySQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
@@ -221,52 +234,38 @@ class ProxySQLExecutorTest {
         when(transactionRule.getDefaultType()).thenReturn(TransactionType.LOCAL);
         when(connectionSession.getTransactionStatus().isInTransaction()).thenReturn(false);
         ExecutionContext executionContext = new ExecutionContext(
-                new QueryContext(createPostgreSQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext()), Collections.emptyList(), mock(RouteContext.class));
+                new QueryContext(createPostgreSQLCreateTableStatementContext(), "", Collections.emptyList(), new HintValueContext(), mockConnectionContext(), mock(ShardingSphereMetaData.class)),
+                Collections.emptyList(), mock(RouteContext.class));
         new ProxySQLExecutor(JDBCDriverType.STATEMENT, databaseConnectionManager, mock(DatabaseConnector.class), mockQueryContext()).checkExecutePrerequisites(executionContext);
     }
     
     private CreateTableStatementContext createMySQLCreateTableStatementContext() {
         MySQLCreateTableStatement sqlStatement = new MySQLCreateTableStatement(false);
         sqlStatement.setTable(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order"))));
-        return new CreateTableStatementContext(sqlStatement);
+        return new CreateTableStatementContext(sqlStatement, DefaultDatabase.LOGIC_NAME);
     }
     
     private TruncateStatementContext createMySQLTruncateStatementContext() {
         MySQLTruncateStatement sqlStatement = new MySQLTruncateStatement();
         sqlStatement.getTables().add(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order"))));
-        return new TruncateStatementContext(sqlStatement);
+        return new TruncateStatementContext(sqlStatement, DefaultDatabase.LOGIC_NAME);
     }
     
     private SQLStatementContext createPostgreSQLTruncateStatementContext() {
         PostgreSQLTruncateStatement sqlStatement = new PostgreSQLTruncateStatement();
         sqlStatement.getTables().add(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order"))));
-        return new TruncateStatementContext(sqlStatement);
+        return new TruncateStatementContext(sqlStatement, DefaultDatabase.LOGIC_NAME);
     }
     
     private CursorStatementContext createCursorStatementContext() {
         CursorStatementContext result = mock(CursorStatementContext.class, RETURNS_DEEP_STUBS);
-        ShardingSphereDatabase database = mock(ShardingSphereDatabase.class, RETURNS_DEEP_STUBS);
-        SelectStatement selectStatement = createSelectStatement();
-        selectStatement.setProjections(new ProjectionsSegment(0, 0));
-        OpenGaussCursorStatement sqlStatement = new OpenGaussCursorStatement();
-        sqlStatement.setSelect(selectStatement);
-        SelectStatementContext selectStatementContext = new SelectStatementContext(createShardingSphereMetaData(database), Collections.emptyList(),
-                selectStatement, DefaultDatabase.LOGIC_NAME, Collections.emptyList());
-        when(result.getSelectStatementContext()).thenReturn(selectStatementContext);
-        when(result.getSqlStatement()).thenReturn(sqlStatement);
+        when(result.getTablesContext().getDatabaseName()).thenReturn(Optional.empty());
         return result;
     }
     
     private ShardingSphereMetaData createShardingSphereMetaData(final ShardingSphereDatabase database) {
         return new ShardingSphereMetaData(Collections.singletonMap(DefaultDatabase.LOGIC_NAME, database), mock(ResourceMetaData.class),
                 mock(RuleMetaData.class), mock(ConfigurationProperties.class));
-    }
-    
-    private SelectStatement createSelectStatement() {
-        SelectStatement result = new MySQLSelectStatement();
-        result.setFrom(new SimpleTableSegment(new TableNameSegment(10, 13, new IdentifierValue("tbl"))));
-        result.setProjections(new ProjectionsSegment(0, 0));
-        return result;
     }
     
     private InsertStatementContext createMySQLInsertStatementContext() {
@@ -280,7 +279,7 @@ class ProxySQLExecutorTest {
     private CreateTableStatementContext createPostgreSQLCreateTableStatementContext() {
         PostgreSQLCreateTableStatement sqlStatement = new PostgreSQLCreateTableStatement(false);
         sqlStatement.setTable(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("t_order"))));
-        return new CreateTableStatementContext(sqlStatement);
+        return new CreateTableStatementContext(sqlStatement, DefaultDatabase.LOGIC_NAME);
     }
     
     private InsertStatementContext createPostgreSQLInsertStatementContext() {

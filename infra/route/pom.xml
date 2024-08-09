@@ -29,12 +29,12 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-infra-binder</artifactId>
+            <artifactId>shardingsphere-infra-session</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.shardingsphere</groupId>
-            <artifactId>shardingsphere-infra-session</artifactId>
+            <artifactId>shardingsphere-infra-checker</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

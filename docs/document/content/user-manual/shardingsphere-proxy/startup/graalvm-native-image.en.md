@@ -37,7 +37,7 @@ services:
 JDK 22 according to https://www.graalvm.org/downloads/. If `SDKMAN!` is used,
 
 ```shell
-sdk install java 22.0.1-graalce
+sdk install java 22.0.2-graalce
 ```
 
 2. Install the local toolchain as required by https://www.graalvm.org/jdk22/reference-manual/native-image/#prerequisites.
@@ -129,8 +129,7 @@ services:
 ## Observability
 
 ShardingSphere for GraalVM Native Image form Proxy, which provides observability capabilities
-with https://shardingsphere.apache.org/document/current/cn/user-manual/shardingsphere-proxy/observability/
-not consistent.
+with [Observability](/en/user-manual/shardingsphere-proxy/observability) not consistent.
 
 You can observe GraalVM Native Image using a series of command line tools or visualization tools available
 at https://www.graalvm.org/jdk22/tools/, and use VSCode to debug it according to its requirements.

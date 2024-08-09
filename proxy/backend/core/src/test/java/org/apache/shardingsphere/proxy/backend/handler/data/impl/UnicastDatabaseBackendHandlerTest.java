@@ -20,12 +20,14 @@ package org.apache.shardingsphere.proxy.backend.handler.data.impl;
 import lombok.SneakyThrows;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.resource.ResourceMetaData;
 import org.apache.shardingsphere.infra.metadata.database.rule.RuleMetaData;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.metadata.persist.MetaDataPersistService;
@@ -55,6 +57,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -92,8 +95,15 @@ class UnicastDatabaseBackendHandlerTest {
         when(connectionSession.getDatabaseConnectionManager()).thenReturn(mock(ProxyDatabaseConnectionManager.class));
         mockDatabaseConnector(new UpdateResponseHeader(mock(SQLStatement.class)));
         unicastDatabaseBackendHandler =
-                new UnicastDatabaseBackendHandler(new QueryContext(mock(SQLStatementContext.class), EXECUTE_SQL, Collections.emptyList(), new HintValueContext()), connectionSession);
+                new UnicastDatabaseBackendHandler(new QueryContext(mock(SQLStatementContext.class), EXECUTE_SQL, Collections.emptyList(), new HintValueContext(), mockConnectionContext(),
+                        mock(ShardingSphereMetaData.class)), connectionSession);
         setBackendHandlerFactory(unicastDatabaseBackendHandler);
+    }
+    
+    private ConnectionContext mockConnectionContext() {
+        ConnectionContext result = mock(ConnectionContext.class);
+        when(result.getCurrentDatabaseName()).thenReturn(Optional.of(DefaultDatabase.LOGIC_NAME));
+        return result;
     }
     
     private void mockDatabaseConnector(final ResponseHeader responseHeader) throws SQLException {

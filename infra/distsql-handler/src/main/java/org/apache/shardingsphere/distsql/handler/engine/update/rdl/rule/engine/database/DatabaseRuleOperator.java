@@ -20,9 +20,8 @@ package org.apache.shardingsphere.distsql.handler.engine.update.rdl.rule.engine.
 import org.apache.shardingsphere.distsql.statement.rdl.rule.database.DatabaseRuleDefinitionStatement;
 import org.apache.shardingsphere.infra.config.rule.RuleConfiguration;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
-import org.apache.shardingsphere.infra.metadata.version.MetaDataVersion;
 
-import java.util.Collection;
+import java.sql.SQLException;
 
 /**
  * Database rule operator.
@@ -35,7 +34,7 @@ public interface DatabaseRuleOperator {
      * @param sqlStatement SQL statement
      * @param database database
      * @param currentRuleConfig current rule configuration
-     * @return meta data versions
+     * @throws SQLException SQL Exception
      */
-    Collection<MetaDataVersion> operate(DatabaseRuleDefinitionStatement sqlStatement, ShardingSphereDatabase database, RuleConfiguration currentRuleConfig);
+    void operate(DatabaseRuleDefinitionStatement sqlStatement, ShardingSphereDatabase database, RuleConfiguration currentRuleConfig) throws SQLException;
 }

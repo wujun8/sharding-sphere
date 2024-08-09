@@ -18,9 +18,7 @@
 package org.apache.shardingsphere.driver.jdbc.core.connection;
 
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.shardingsphere.authority.rule.AuthorityRule;
 import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
-import org.apache.shardingsphere.infra.datasource.pool.creator.DataSourcePoolCreator;
 import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
 import org.apache.shardingsphere.infra.executor.sql.execute.engine.ConnectionMode;
 import org.apache.shardingsphere.infra.instance.metadata.InstanceType;
@@ -30,14 +28,9 @@ import org.apache.shardingsphere.infra.metadata.database.rule.RuleMetaData;
 import org.apache.shardingsphere.metadata.persist.MetaDataPersistService;
 import org.apache.shardingsphere.mode.manager.ContextManager;
 import org.apache.shardingsphere.test.fixture.jdbc.MockedDataSource;
-import org.apache.shardingsphere.test.mock.AutoMockExtension;
-import org.apache.shardingsphere.test.mock.StaticMockSettings;
 import org.apache.shardingsphere.transaction.rule.TransactionRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -58,9 +51,6 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(AutoMockExtension.class)
-@StaticMockSettings(DataSourcePoolCreator.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class DriverDatabaseConnectionManagerTest {
     
     private DriverDatabaseConnectionManager databaseConnectionManager;
@@ -76,8 +66,7 @@ class DriverDatabaseConnectionManagerTest {
         when(result.getStorageUnits(DefaultDatabase.LOGIC_NAME)).thenReturn(storageUnits);
         MetaDataPersistService persistService = mockMetaDataPersistService();
         when(result.getPersistServiceFacade().getMetaDataPersistService()).thenReturn(persistService);
-        when(result.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(
-                new RuleMetaData(Arrays.asList(mock(AuthorityRule.class, RETURNS_DEEP_STUBS), mock(TransactionRule.class, RETURNS_DEEP_STUBS))));
+        when(result.getMetaDataContexts().getMetaData().getGlobalRuleMetaData()).thenReturn(new RuleMetaData(Collections.singleton(mock(TransactionRule.class, RETURNS_DEEP_STUBS))));
         when(result.getComputeNodeInstanceContext().getAllClusterInstances(InstanceType.PROXY, Arrays.asList("OLTP", "OLAP"))).thenReturn(
                 Collections.singletonMap("foo_id", new ProxyInstanceMetaData("foo_id", "127.0.0.1@3307", "foo_version")));
         return result;
@@ -87,7 +76,7 @@ class DriverDatabaseConnectionManagerTest {
         Map<String, StorageUnit> result = new HashMap<>(2, 1F);
         result.put("ds", mockStorageUnit(new MockedDataSource()));
         DataSource invalidDataSource = mock(DataSource.class);
-        when(invalidDataSource.getConnection()).thenThrow(new SQLException(""));
+        when(invalidDataSource.getConnection()).thenThrow(new SQLException("Mock invalid data source"));
         result.put("invalid_ds", mockStorageUnit(invalidDataSource));
         return result;
     }
@@ -175,7 +164,8 @@ class DriverDatabaseConnectionManagerTest {
     void assertGetConnectionsWhenConnectionCreateFailed() {
         SQLException ex = assertThrows(SQLException.class, () -> databaseConnectionManager.getConnections(DefaultDatabase.LOGIC_NAME, "invalid_ds", 0, 3, ConnectionMode.CONNECTION_STRICTLY));
         assertThat(ex.getMessage(), is("Can not get 3 connections one time, partition succeed connection(0) have released. "
-                + "Please consider increasing the 'maxPoolSize' of the data sources or decreasing the 'max-connections-size-per-query' in properties."));
+                + "Please consider increasing the 'maxPoolSize' of the data sources or decreasing the 'max-connections-size-per-query' in properties." + System.lineSeparator()
+                + "More details: java.sql.SQLException: Mock invalid data source"));
     }
     
     @Test

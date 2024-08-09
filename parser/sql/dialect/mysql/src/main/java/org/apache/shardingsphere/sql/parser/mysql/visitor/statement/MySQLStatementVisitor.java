@@ -51,6 +51,7 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.Convert
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CteClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.CurrentUserFunctionContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DataTypeContext;
+import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DatabaseNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DeleteContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DuplicateSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.EngineRefContext;
@@ -110,7 +111,6 @@ import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.Replace
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ReplaceSelectClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.ReplaceValuesClauseContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.RowConstructorListContext;
-import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.DatabaseNameContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SelectContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SelectSpecificationContext;
 import org.apache.shardingsphere.sql.parser.autogen.MySQLStatementParser.SelectWithIntoContext;
@@ -602,7 +602,7 @@ public abstract class MySQLStatementVisitor extends MySQLStatementBaseVisitor<AS
             SubquerySegment subquerySegment = new SubquerySegment(
                     ctx.subquery().getStart().getStartIndex(), ctx.subquery().getStop().getStopIndex(), (MySQLSelectStatement) visit(ctx.subquery()), getOriginalText(ctx.subquery()));
             if (null != ctx.EXISTS()) {
-                subquerySegment.setSubqueryType(SubqueryType.EXISTS_SUBQUERY);
+                subquerySegment.setSubqueryType(SubqueryType.EXISTS);
                 return new ExistsSubqueryExpression(startIndex, stopIndex, subquerySegment);
             }
             return new SubqueryExpressionSegment(subquerySegment);
@@ -643,8 +643,8 @@ public abstract class MySQLStatementVisitor extends MySQLStatementBaseVisitor<AS
         if (null != ctx.LP_() && 1 == ctx.expr().size()) {
             ASTNode result = visit(ctx.expr(0));
             if (result instanceof ColumnSegment) {
-                ((ColumnSegment) result).getParentheses().add(new ParenthesesSegment(ctx.LP_().getSymbol().getStartIndex(), ctx.LP_().getSymbol().getStopIndex(), true));
-                ((ColumnSegment) result).getParentheses().add(new ParenthesesSegment(ctx.RP_().getSymbol().getStartIndex(), ctx.RP_().getSymbol().getStopIndex(), false));
+                ((ColumnSegment) result).setLeftParentheses(new ParenthesesSegment(ctx.LP_().getSymbol().getStartIndex(), ctx.LP_().getSymbol().getStopIndex(), ctx.LP_().getSymbol().getText()));
+                ((ColumnSegment) result).setRightParentheses(new ParenthesesSegment(ctx.RP_().getSymbol().getStartIndex(), ctx.RP_().getSymbol().getStopIndex(), ctx.RP_().getSymbol().getText()));
             }
             return result;
         }

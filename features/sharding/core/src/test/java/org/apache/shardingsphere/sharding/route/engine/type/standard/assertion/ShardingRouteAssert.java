@@ -63,7 +63,7 @@ public final class ShardingRouteAssert {
     
     /**
      * Assert route.
-     * 
+     *
      * @param sql SQL 
      * @param params parameters
      * @return route context
@@ -79,10 +79,12 @@ public final class ShardingRouteAssert {
                 new CacheOption(2000, 65535L), new CacheOption(128, 1024L));
         RuleMetaData ruleMetaData = new RuleMetaData(Arrays.asList(shardingRule, singleRule, timestampServiceRule));
         ShardingSphereDatabase database = new ShardingSphereDatabase(DefaultDatabase.LOGIC_NAME, databaseType, mock(ResourceMetaData.class, RETURNS_DEEP_STUBS), ruleMetaData, schemas);
-        SQLStatementContext sqlStatementContext =
-                new SQLBindEngine(createShardingSphereMetaData(database), DefaultDatabase.LOGIC_NAME, new HintValueContext()).bind(sqlStatementParserEngine.parse(sql, false), params);
-        QueryContext queryContext = new QueryContext(sqlStatementContext, sql, params, new HintValueContext());
-        return new SQLRouteEngine(Arrays.asList(shardingRule, singleRule), props).route(new ConnectionContext(Collections::emptySet), queryContext, mock(RuleMetaData.class), database);
+        ShardingSphereMetaData metaData = createShardingSphereMetaData(database);
+        SQLStatementContext sqlStatementContext = new SQLBindEngine(metaData, DefaultDatabase.LOGIC_NAME, new HintValueContext()).bind(sqlStatementParserEngine.parse(sql, false), params);
+        ConnectionContext connectionContext = new ConnectionContext(Collections::emptySet);
+        connectionContext.setCurrentDatabaseName(DefaultDatabase.LOGIC_NAME);
+        QueryContext queryContext = new QueryContext(sqlStatementContext, sql, params, new HintValueContext(), connectionContext, metaData);
+        return new SQLRouteEngine(Arrays.asList(shardingRule, singleRule), props).route(connectionContext, queryContext, mock(RuleMetaData.class), database);
     }
     
     private static ShardingSphereMetaData createShardingSphereMetaData(final ShardingSphereDatabase database) {

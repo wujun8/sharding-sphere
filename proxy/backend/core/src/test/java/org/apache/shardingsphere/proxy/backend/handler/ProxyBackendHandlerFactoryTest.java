@@ -28,6 +28,8 @@ import org.apache.shardingsphere.infra.hint.HintValueContext;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.rule.RuleMetaData;
 import org.apache.shardingsphere.infra.metadata.user.Grantee;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
+import org.apache.shardingsphere.infra.session.connection.transaction.TransactionConnectionContext;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
 import org.apache.shardingsphere.infra.state.cluster.ClusterState;
 import org.apache.shardingsphere.mode.manager.ContextManager;
@@ -68,6 +70,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -90,7 +93,8 @@ class ProxyBackendHandlerFactoryTest {
     
     @BeforeEach
     void setUp() {
-        when(connectionSession.getConnectionContext().getGrantee()).thenReturn(new Grantee(DefaultUser.USERNAME, "%"));
+        ConnectionContext connectionContext = mockConnectionContext();
+        when(connectionSession.getConnectionContext()).thenReturn(connectionContext);
         when(connectionSession.getCurrentDatabaseName()).thenReturn("db");
         when(connectionSession.getUsedDatabaseName()).thenReturn("db");
         ProxyDatabaseConnectionManager databaseConnectionManager = mock(ProxyDatabaseConnectionManager.class);
@@ -99,6 +103,14 @@ class ProxyBackendHandlerFactoryTest {
         ContextManager contextManager = mockContextManager();
         when(contextManager.getStateContext().getClusterState()).thenReturn(ClusterState.OK);
         when(ProxyContext.getInstance().getContextManager()).thenReturn(contextManager);
+    }
+    
+    private ConnectionContext mockConnectionContext() {
+        ConnectionContext result = mock(ConnectionContext.class);
+        when(result.getCurrentDatabaseName()).thenReturn(Optional.of(DefaultDatabase.LOGIC_NAME));
+        when(result.getGrantee()).thenReturn(new Grantee(DefaultUser.USERNAME, "%"));
+        when(result.getTransactionContext()).thenReturn(mock(TransactionConnectionContext.class));
+        return result;
     }
     
     private ContextManager mockContextManager() {

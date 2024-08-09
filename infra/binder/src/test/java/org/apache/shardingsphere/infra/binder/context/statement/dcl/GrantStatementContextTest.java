@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.binder.context.statement.dcl;
 
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.statement.dcl.GrantStatement;
@@ -30,51 +31,44 @@ import org.apache.shardingsphere.sql.parser.statement.sqlserver.dcl.SQLServerGra
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class GrantStatementContextTest {
     
     @Test
     void assertMySQLNewInstance() {
-        assertNewInstance(mock(MySQLGrantStatement.class));
+        assertNewInstance(new MySQLGrantStatement());
     }
     
     @Test
     void assertPostgreSQLNewInstance() {
-        assertNewInstance(mock(PostgreSQLGrantStatement.class));
+        assertNewInstance(new PostgreSQLGrantStatement());
     }
     
     @Test
     void assertOracleNewInstance() {
-        assertNewInstance(mock(OracleGrantStatement.class));
+        assertNewInstance(new OracleGrantStatement());
     }
     
     @Test
     void assertSQLServerNewInstance() {
-        assertNewInstance(mock(SQLServerGrantStatement.class));
+        assertNewInstance(new SQLServerGrantStatement());
     }
     
     @Test
     void assertSQL92NewInstance() {
-        assertNewInstance(mock(SQL92GrantStatement.class));
+        assertNewInstance(new SQL92GrantStatement());
     }
     
     private void assertNewInstance(final GrantStatement grantStatement) {
         SimpleTableSegment table1 = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_1")));
         SimpleTableSegment table2 = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_2")));
-        List<SimpleTableSegment> tables = new LinkedList<>();
-        tables.add(table1);
-        tables.add(table2);
-        when(grantStatement.getTables()).thenReturn(tables);
-        GrantStatementContext actual = new GrantStatementContext(grantStatement);
+        grantStatement.getTables().addAll(Arrays.asList(table1, table2));
+        GrantStatementContext actual = new GrantStatementContext(grantStatement, DefaultDatabase.LOGIC_NAME);
         assertThat(actual, instanceOf(CommonSQLStatementContext.class));
         assertThat(actual.getSqlStatement(), is(grantStatement));
         assertThat(actual.getTablesContext().getSimpleTables().stream().map(each -> each.getTableName().getIdentifier().getValue()).collect(Collectors.toList()), is(Arrays.asList("tbl_1", "tbl_2")));

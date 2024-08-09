@@ -18,21 +18,22 @@
 package org.apache.shardingsphere.encrypt.rewrite.token.generator.insert;
 
 import com.google.common.base.Preconditions;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.apache.shardingsphere.encrypt.rewrite.aware.EncryptRuleAware;
-import org.apache.shardingsphere.encrypt.rewrite.token.util.EncryptTokenGeneratorUtils;
+import org.apache.shardingsphere.encrypt.rewrite.token.comparator.InsertSelectColumnsEncryptorComparator;
 import org.apache.shardingsphere.encrypt.rule.EncryptRule;
-import org.apache.shardingsphere.encrypt.rule.EncryptTable;
 import org.apache.shardingsphere.encrypt.rule.column.EncryptColumn;
+import org.apache.shardingsphere.encrypt.rule.table.EncryptTable;
+import org.apache.shardingsphere.infra.annotation.HighFrequencyInvocation;
 import org.apache.shardingsphere.infra.binder.context.segment.select.projection.Projection;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.dml.InsertStatementContext;
 import org.apache.shardingsphere.infra.exception.core.ShardingSpherePreconditions;
 import org.apache.shardingsphere.infra.exception.generic.UnsupportedSQLOperationException;
-import org.apache.shardingsphere.infra.rewrite.sql.token.generator.OptionalSQLTokenGenerator;
-import org.apache.shardingsphere.infra.rewrite.sql.token.generator.aware.PreviousSQLTokensAware;
-import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.SQLToken;
-import org.apache.shardingsphere.infra.rewrite.sql.token.pojo.generic.UseDefaultInsertColumnsToken;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.generator.OptionalSQLTokenGenerator;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.generator.aware.PreviousSQLTokensAware;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.pojo.SQLToken;
+import org.apache.shardingsphere.infra.rewrite.sql.token.common.pojo.generic.UseDefaultInsertColumnsToken;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.InsertColumnsSegment;
 
@@ -45,12 +46,14 @@ import java.util.Optional;
 /**
  * Insert default columns token generator for encrypt.
  */
+@HighFrequencyInvocation
+@RequiredArgsConstructor
 @Setter
-public final class EncryptInsertDefaultColumnsTokenGenerator implements OptionalSQLTokenGenerator<InsertStatementContext>, PreviousSQLTokensAware, EncryptRuleAware {
+public final class EncryptInsertDefaultColumnsTokenGenerator implements OptionalSQLTokenGenerator<InsertStatementContext>, PreviousSQLTokensAware {
+    
+    private final EncryptRule encryptRule;
     
     private List<SQLToken> previousSQLTokens;
-    
-    private EncryptRule encryptRule;
     
     @Override
     public boolean isGenerateSQLToken(final SQLStatementContext sqlStatementContext) {
@@ -90,7 +93,7 @@ public final class EncryptInsertDefaultColumnsTokenGenerator implements Optional
             Collection<ColumnSegment> derivedInsertColumns = insertStatementContext.getSqlStatement().getDerivedInsertColumns();
             Collection<Projection> projections = insertStatementContext.getInsertSelectContext().getSelectStatementContext().getProjectionsContext().getExpandProjections();
             ShardingSpherePreconditions.checkState(derivedInsertColumns.size() == projections.size(), () -> new UnsupportedSQLOperationException("Column count doesn't match value count."));
-            ShardingSpherePreconditions.checkState(EncryptTokenGeneratorUtils.isAllInsertSelectColumnsUseSameEncryptor(derivedInsertColumns, projections, encryptRule),
+            ShardingSpherePreconditions.checkState(InsertSelectColumnsEncryptorComparator.isSame(derivedInsertColumns, projections, encryptRule),
                     () -> new UnsupportedSQLOperationException("Can not use different encryptor in insert select columns"));
         }
         return new UseDefaultInsertColumnsToken(

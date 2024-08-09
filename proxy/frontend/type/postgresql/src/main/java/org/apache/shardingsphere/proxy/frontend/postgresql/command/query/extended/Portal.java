@@ -92,14 +92,15 @@ public final class Portal {
             ((ParameterAware) sqlStatementContext).setUpParameters(params);
         }
         DatabaseType protocolType = ProxyContext.getInstance().getContextManager().getDatabase(databaseName).getProtocolType();
-        QueryContext queryContext = new QueryContext(sqlStatementContext, preparedStatement.getSql(), params, preparedStatement.getHintValueContext(), true);
+        QueryContext queryContext = new QueryContext(sqlStatementContext, preparedStatement.getSql(), params, preparedStatement.getHintValueContext(),
+                databaseConnectionManager.getConnectionSession().getConnectionContext(), ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData(), true);
         databaseConnectionManager.getConnectionSession().setQueryContext(queryContext);
         proxyBackendHandler = ProxyBackendHandlerFactory.newInstance(protocolType, queryContext, databaseConnectionManager.getConnectionSession(), true);
     }
     
     /**
      * Do bind.
-     * 
+     *
      * @throws SQLException SQL exception
      */
     public void bind() throws SQLException {

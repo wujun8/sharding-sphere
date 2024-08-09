@@ -29,7 +29,9 @@ public enum AdapterType {
     
     JDBC("jdbc"),
     
-    PROXY("proxy");
+    PROXY("proxy"),
+    
+    PROXY_RANDOM("proxy_random");
     
     private final String value;
 }

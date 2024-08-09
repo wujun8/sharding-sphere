@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.binder.context.statement.ddl;
 
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.assignment.ColumnAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.assignment.SetAssignmentSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.dml.column.ColumnSegment;
@@ -38,14 +39,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class PrepareStatementContextTest {
     
@@ -61,14 +59,14 @@ class PrepareStatementContextTest {
     
     @Test
     void assertNewInstance() {
-        PostgreSQLPrepareStatement prepareStatement = mock(PostgreSQLPrepareStatement.class);
-        when(prepareStatement.getSelect()).thenReturn(Optional.of(getSelect()));
-        when(prepareStatement.getInsert()).thenReturn(Optional.of(getInsert()));
-        when(prepareStatement.getUpdate()).thenReturn(Optional.of(getUpdate()));
-        when(prepareStatement.getDelete()).thenReturn(Optional.of(getDelete()));
-        PrepareStatementContext actual = new PrepareStatementContext(prepareStatement);
+        PostgreSQLPrepareStatement sqlStatement = new PostgreSQLPrepareStatement();
+        sqlStatement.setSelect(getSelect());
+        sqlStatement.setInsert(getInsert());
+        sqlStatement.setUpdate(getUpdate());
+        sqlStatement.setDelete(getDelete());
+        PrepareStatementContext actual = new PrepareStatementContext(sqlStatement, DefaultDatabase.LOGIC_NAME);
         assertThat(actual, instanceOf(CommonSQLStatementContext.class));
-        assertThat(actual.getSqlStatement(), is(prepareStatement));
+        assertThat(actual.getSqlStatement(), is(sqlStatement));
         assertThat(actual.getTablesContext().getSimpleTables().stream().map(each -> each.getTableName().getIdentifier().getValue()).collect(Collectors.toList()),
                 is(Arrays.asList("tbl_1", "tbl_1", "tbl_1", "tbl_1")));
     }

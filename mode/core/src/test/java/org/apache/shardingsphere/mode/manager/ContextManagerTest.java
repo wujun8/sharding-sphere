@@ -20,14 +20,15 @@ package org.apache.shardingsphere.mode.manager;
 import org.apache.groovy.util.Maps;
 import org.apache.shardingsphere.infra.config.mode.ModeConfiguration;
 import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
-import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
 import org.apache.shardingsphere.infra.exception.dialect.exception.syntax.database.NoDatabaseSelectedException;
 import org.apache.shardingsphere.infra.exception.dialect.exception.syntax.database.UnknownDatabaseException;
+import org.apache.shardingsphere.infra.instance.ComputeNodeInstance;
 import org.apache.shardingsphere.infra.instance.ComputeNodeInstanceContext;
+import org.apache.shardingsphere.infra.instance.metadata.proxy.ProxyInstanceMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.resource.ResourceMetaData;
 import org.apache.shardingsphere.infra.metadata.database.resource.node.StorageNode;
@@ -49,6 +50,12 @@ import org.apache.shardingsphere.test.util.PropertiesBuilder;
 import org.apache.shardingsphere.test.util.PropertiesBuilder.Property;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.sql.Types;
 import java.util.Collections;
@@ -72,16 +79,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ContextManagerTest {
     
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private MetaDataContexts metaDataContexts;
     
     private ContextManager contextManager;
     
     @BeforeEach
     void setUp() {
-        metaDataContexts = mock(MetaDataContexts.class, RETURNS_DEEP_STUBS);
-        when(metaDataContexts.getMetaData().getProps().getValue(ConfigurationPropertyKey.KERNEL_EXECUTOR_SIZE)).thenReturn(1);
         when(metaDataContexts.getMetaData().getProps()).thenReturn(new ConfigurationProperties(new Properties()));
         ShardingSphereDatabase database = mockDatabase();
         when(metaDataContexts.getMetaData().containsDatabase("foo_db")).thenReturn(true);
@@ -89,6 +97,7 @@ class ContextManagerTest {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").containsSchema("foo_schema")).thenReturn(true);
         when(metaDataContexts.getMetaData().getDatabases().values()).thenReturn(Collections.singleton(database));
         ComputeNodeInstanceContext computeNodeInstanceContext = mock(ComputeNodeInstanceContext.class);
+        when(computeNodeInstanceContext.getInstance()).thenReturn(new ComputeNodeInstance(new ProxyInstanceMetaData("foo_id", 3307), Collections.emptyList()));
         when(computeNodeInstanceContext.getModeConfiguration()).thenReturn(mock(ModeConfiguration.class));
         contextManager = new ContextManager(metaDataContexts, computeNodeInstanceContext, mock(PersistRepository.class));
     }
@@ -132,14 +141,14 @@ class ContextManagerTest {
     
     @Test
     void assertAddDatabase() {
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().addDatabase("new_db");
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().addDatabase("new_db");
         verify(metaDataContexts.getMetaData()).addDatabase(eq("new_db"), any(DatabaseType.class), any(ConfigurationProperties.class));
     }
     
     @Test
     void assertAddExistedDatabase() {
         when(metaDataContexts.getMetaData().containsDatabase("foo_db")).thenReturn(true);
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().addDatabase("foo_db");
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().addDatabase("foo_db");
         verify(metaDataContexts.getMetaData(), times(0)).addDatabase(eq("foo_db"), any(DatabaseType.class), any(ConfigurationProperties.class));
     }
     
@@ -147,26 +156,26 @@ class ContextManagerTest {
     void assertDropDatabase() {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getName()).thenReturn("foo_db");
         when(metaDataContexts.getMetaData().containsDatabase("foo_db")).thenReturn(true);
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().dropDatabase("foo_db");
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().dropDatabase("foo_db");
         verify(metaDataContexts.getMetaData()).dropDatabase("foo_db");
     }
     
     @Test
     void assertDropNotExistedDatabase() {
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().dropDatabase("not_existed_db");
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().dropDatabase("not_existed_db");
         verify(metaDataContexts.getMetaData(), times(0)).dropDatabase("not_existed_db");
     }
     
     @Test
     void assertAddSchema() {
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().addSchema("foo_db", "bar_schema");
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().addSchema("foo_db", "bar_schema");
         verify(metaDataContexts.getMetaData().getDatabase("foo_db")).addSchema(anyString(), any(ShardingSphereSchema.class));
     }
     
     @Test
     void assertAddExistedSchema() {
         when(contextManager.getMetaDataContexts().getMetaData().getDatabase("foo_db").containsSchema("foo_schema")).thenReturn(true);
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().addSchema("foo_db", "foo_schema");
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().addSchema("foo_db", "foo_schema");
         verify(metaDataContexts.getMetaData().getDatabase("foo_db"), times(0)).addSchema(anyString(), any(ShardingSphereSchema.class));
     }
     
@@ -177,7 +186,7 @@ class ContextManagerTest {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getSchema("foo_schema")).thenReturn(toBeAlteredSchema);
         ShardingSphereColumn toBeChangedColumn = new ShardingSphereColumn("foo_col", Types.VARCHAR, false, false, false, true, false, false);
         ShardingSphereTable toBeChangedTable = new ShardingSphereTable("foo_tbl", Collections.singleton(toBeChangedColumn), Collections.emptyList(), Collections.emptyList());
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().alterSchema("foo_db", "foo_schema", toBeChangedTable, null);
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().alterSchema("foo_db", "foo_schema", toBeChangedTable, null);
         ShardingSphereTable table = contextManager.getMetaDataContexts().getMetaData().getDatabase("foo_db").getSchema("foo_schema").getTables().get("foo_tbl");
         assertThat(table.getColumnValues().size(), is(1));
         assertTrue(table.containsColumn("foo_col"));
@@ -189,7 +198,7 @@ class ContextManagerTest {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getSchemas()).thenReturn(Collections.singletonMap("foo_schema", toBeAlteredSchema));
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getSchema("foo_schema")).thenReturn(toBeAlteredSchema);
         ShardingSphereView toBeChangedView = new ShardingSphereView("foo_view", "select `foo_view`.`foo_view`.`id` AS `id` from `foo_view`.`foo_view`");
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().alterSchema("foo_db", "foo_schema", null, toBeChangedView);
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().alterSchema("foo_db", "foo_schema", null, toBeChangedView);
         ShardingSphereView view = contextManager.getMetaDataContexts().getMetaData().getDatabase("foo_db").getSchema("foo_schema").getView("foo_view");
         assertThat(view.getName(), is("foo_view"));
         assertThat(view.getViewDefinition(), is("select `foo_view`.`foo_view`.`id` AS `id` from `foo_view`.`foo_view`"));
@@ -198,14 +207,14 @@ class ContextManagerTest {
     @Test
     void assertAlterSchemaForTableDropped() {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getSchemas()).thenReturn(Collections.singletonMap("foo_schema", createToBeAlteredSchema()));
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().alterSchema("foo_db", "foo_schema", "foo_tbl", null);
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().alterSchema("foo_db", "foo_schema", "foo_tbl", null);
         assertFalse(contextManager.getMetaDataContexts().getMetaData().getDatabase("foo_db").getSchema("foo_schema").getTables().containsKey("foo_tbl"));
     }
     
     @Test
     void assertAlterSchemaForViewDropped() {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getSchemas()).thenReturn(Collections.singletonMap("foo_schema", createToBeAlteredSchema()));
-        contextManager.getMetaDataContextManager().getResourceMetaDataManager().alterSchema("foo_db", "foo_schema", "foo_view", null);
+        contextManager.getMetaDataContextManager().getSchemaMetaDataManager().alterSchema("foo_db", "foo_schema", "foo_view", null);
         assertFalse(contextManager.getMetaDataContexts().getMetaData().getDatabase("foo_db").getSchema("foo_schema").getViews().containsKey("foo_view"));
     }
     
@@ -237,7 +246,7 @@ class ContextManagerTest {
     
     @Test
     void assertAlterProperties() {
-        contextManager.getMetaDataContextManager().getConfigurationManager().alterProperties(PropertiesBuilder.build(new Property("foo", "foo_value")));
+        contextManager.getMetaDataContextManager().getGlobalConfigurationManager().alterProperties(PropertiesBuilder.build(new Property("foo", "foo_value")));
         assertThat(contextManager.getMetaDataContexts().getMetaData().getProps().getProps().getProperty("foo"), is("foo_value"));
     }
     
@@ -246,7 +255,7 @@ class ContextManagerTest {
         when(metaDataContexts.getMetaData().getDatabase("foo_db").getName()).thenReturn("foo_db");
         ShardingSphereDatabase database = mockDatabase();
         contextManager.reloadSchema(database, "foo_schema", "foo_ds");
-        verify(contextManager.getRepository()).delete(DatabaseMetaDataNode.getMetaDataSchemaPath("foo_db", "foo_schema"));
+        verify(contextManager.getPersistServiceFacade().getRepository()).delete(DatabaseMetaDataNode.getMetaDataSchemaPath("foo_db", "foo_schema"));
     }
     
     @Test

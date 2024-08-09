@@ -18,6 +18,7 @@
 package org.apache.shardingsphere.infra.binder.context.statement.dal;
 
 import org.apache.shardingsphere.infra.binder.context.statement.CommonSQLStatementContext;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.SimpleTableSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.table.TableNameSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
@@ -30,19 +31,16 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class ShowCreateTableStatementContextTest {
     
     @Test
     void assertNewInstance() {
-        MySQLShowCreateTableStatement showCreateTableStatement = mock(MySQLShowCreateTableStatement.class);
-        SimpleTableSegment table = new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_1")));
-        when(showCreateTableStatement.getTable()).thenReturn(table);
-        ShowCreateTableStatementContext actual = new ShowCreateTableStatementContext(showCreateTableStatement);
+        MySQLShowCreateTableStatement sqlStatement = new MySQLShowCreateTableStatement();
+        sqlStatement.setTable(new SimpleTableSegment(new TableNameSegment(0, 0, new IdentifierValue("tbl_1"))));
+        ShowCreateTableStatementContext actual = new ShowCreateTableStatementContext(sqlStatement, DefaultDatabase.LOGIC_NAME);
         assertThat(actual, instanceOf(CommonSQLStatementContext.class));
-        assertThat(actual.getSqlStatement(), is(showCreateTableStatement));
+        assertThat(actual.getSqlStatement(), is(sqlStatement));
         assertThat(actual.getTablesContext().getSimpleTables().stream().map(each -> each.getTableName().getIdentifier().getValue()).collect(Collectors.toList()),
                 is(Collections.singletonList("tbl_1")));
     }

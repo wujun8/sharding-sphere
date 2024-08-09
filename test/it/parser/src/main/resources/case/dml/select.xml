@@ -2889,8 +2889,8 @@
         </from>
         <projections start-index="16" stop-index="24" distinct-row="true">
             <column-projection name="item_id" start-index="17" stop-index="23">
-                <parentheses left = "true" start-index = "16" stop-index = "16" />
-                <parentheses left = "false" start-index = "24" stop-index = "24" />
+                <left-parentheses parentheses = "(" start-index = "16" stop-index = "16" />
+                <right-parentheses parentheses = ")" start-index = "24" stop-index = "24" />
             </column-projection>
         </projections>
     </select>
@@ -3243,7 +3243,10 @@
             <simple-table name="t_order_item" start-index="30" stop-index="41" />
         </from>
         <projections distinct-row="true" start-index="15" stop-index="23">
-            <column-projection start-index="16" stop-index="22" name="item_id" />
+            <column-projection start-index="16" stop-index="22" name="item_id">
+                <left-parentheses parentheses="(" start-index="15" stop-index="15" />
+                <right-parentheses parentheses=")" start-index="23" stop-index="23" />
+            </column-projection>
         </projections>
         <order-by>
             <column-item name="item_id" start-index="52" stop-index="58" />
@@ -9473,6 +9476,26 @@
                     <hint-index-name name="i2" start-index="49" stop-index="50"/>
                 </index-hint>
             </simple-table>
+        </from>
+    </select>
+
+    <select sql-case-id="select_with_reserved_word_with_table_ref">
+        <projections start-index="7" stop-index="19">
+            <column-projection name="condition" start-index="7" stop-index="19" >
+                <owner name="xxx" start-index="7" stop-index="9" />
+            </column-projection>
+        </projections>
+        <from start-index="26" stop-index="28">
+            <simple-table name="xxx" start-index="26" stop-index="28"/>
+        </from>
+    </select>
+
+    <select sql-case-id="select_with_reserved_word">
+        <projections start-index="7" stop-index="14">
+            <column-projection name="describe" start-index="7" stop-index="14" />
+        </projections>
+        <from start-index="21" stop-index="23">
+            <simple-table name="xxx" start-index="21" stop-index="23"/>
         </from>
     </select>
 </sql-parser-test-cases>

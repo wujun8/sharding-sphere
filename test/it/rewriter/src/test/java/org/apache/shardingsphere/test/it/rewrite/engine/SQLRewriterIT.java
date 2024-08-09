@@ -18,7 +18,7 @@
 package org.apache.shardingsphere.test.it.rewrite.engine;
 
 import com.google.common.base.Preconditions;
-import org.apache.shardingsphere.infra.binder.context.aware.CursorDefinitionAware;
+import org.apache.shardingsphere.infra.binder.context.aware.CursorAware;
 import org.apache.shardingsphere.infra.binder.context.aware.ParameterAware;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.ddl.CursorStatementContext;
@@ -80,6 +80,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -141,15 +142,16 @@ public abstract class SQLRewriterIT {
         if (sqlStatementContext instanceof ParameterAware) {
             ((ParameterAware) sqlStatementContext).setUpParameters(testParams.getInputParameters());
         }
-        if (sqlStatementContext instanceof CursorDefinitionAware) {
-            ((CursorDefinitionAware) sqlStatementContext).setUpCursorDefinition(createCursorDefinition(databaseName, metaData, sqlStatementParserEngine));
+        if (sqlStatementContext instanceof CursorAware) {
+            ((CursorAware) sqlStatementContext).setCursorStatementContext(createCursorDefinition(databaseName, metaData, sqlStatementParserEngine));
         }
-        QueryContext queryContext = new QueryContext(sqlStatementContext, sql, testParams.getInputParameters(), hintValueContext);
-        ConfigurationProperties props = new ConfigurationProperties(rootConfig.getProps());
-        RouteContext routeContext = new SQLRouteEngine(databaseRules, props).route(new ConnectionContext(Collections::emptySet), queryContext, globalRuleMetaData, database);
-        SQLRewriteEntry sqlRewriteEntry = new SQLRewriteEntry(database, globalRuleMetaData, props);
         ConnectionContext connectionContext = mock(ConnectionContext.class);
         when(connectionContext.getCursorContext()).thenReturn(new CursorConnectionContext());
+        when(connectionContext.getCurrentDatabaseName()).thenReturn(Optional.of(databaseName));
+        QueryContext queryContext = new QueryContext(sqlStatementContext, sql, testParams.getInputParameters(), hintValueContext, connectionContext, metaData);
+        ConfigurationProperties props = new ConfigurationProperties(rootConfig.getProps());
+        RouteContext routeContext = new SQLRouteEngine(databaseRules, props).route(connectionContext, queryContext, globalRuleMetaData, database);
+        SQLRewriteEntry sqlRewriteEntry = new SQLRewriteEntry(database, globalRuleMetaData, props);
         SQLRewriteResult sqlRewriteResult = sqlRewriteEntry.rewrite(queryContext, routeContext, connectionContext);
         return sqlRewriteResult instanceof GenericSQLRewriteResult
                 ? Collections.singleton(((GenericSQLRewriteResult) sqlRewriteResult).getSqlRewriteUnit())

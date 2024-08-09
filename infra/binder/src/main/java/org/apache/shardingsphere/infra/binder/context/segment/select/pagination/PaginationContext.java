@@ -40,7 +40,7 @@ public final class PaginationContext {
     
     private final PaginationValueSegment rowCountSegment;
     
-    private final long actualOffset;
+    private final Long actualOffset;
     
     private final Long actualRowCount;
     
@@ -48,13 +48,16 @@ public final class PaginationContext {
         hasPagination = null != offsetSegment || null != rowCountSegment;
         this.offsetSegment = offsetSegment;
         this.rowCountSegment = rowCountSegment;
-        actualOffset = null == offsetSegment ? 0L : getValue(offsetSegment, params);
+        actualOffset = null == offsetSegment ? Long.valueOf(0L) : getValue(offsetSegment, params);
         actualRowCount = null == rowCountSegment ? null : getValue(rowCountSegment, params);
     }
     
-    private long getValue(final PaginationValueSegment paginationValueSegment, final List<Object> params) {
+    private Long getValue(final PaginationValueSegment paginationValueSegment, final List<Object> params) {
         if (paginationValueSegment instanceof ParameterMarkerPaginationValueSegment) {
             Object obj = null == params || params.isEmpty() ? 0L : params.get(((ParameterMarkerPaginationValueSegment) paginationValueSegment).getParameterIndex());
+            if (null == obj) {
+                return null;
+            }
             return obj instanceof Long ? (long) obj : (int) obj;
         }
         if (paginationValueSegment instanceof ExpressionRowNumberValueSegment) {
@@ -65,7 +68,7 @@ public final class PaginationContext {
     
     /**
      * Get offset segment.
-     * 
+     *
      * @return offset segment
      */
     public Optional<PaginationValueSegment> getOffsetSegment() {
@@ -83,7 +86,7 @@ public final class PaginationContext {
     
     /**
      * Get actual offset.
-     * 
+     *
      * @return actual offset
      */
     public long getActualOffset() {
@@ -138,7 +141,7 @@ public final class PaginationContext {
     
     /**
      * Get revised row count.
-     * 
+     *
      * @param selectStatementContext select statement context
      * @return revised row count
      */

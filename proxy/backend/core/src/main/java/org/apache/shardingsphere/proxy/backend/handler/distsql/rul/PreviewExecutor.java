@@ -24,13 +24,12 @@ import org.apache.shardingsphere.distsql.handler.aware.DistSQLExecutorDatabaseAw
 import org.apache.shardingsphere.distsql.handler.engine.DistSQLConnectionContext;
 import org.apache.shardingsphere.distsql.handler.engine.query.DistSQLQueryExecutor;
 import org.apache.shardingsphere.distsql.statement.rul.sql.PreviewStatement;
-import org.apache.shardingsphere.infra.binder.context.aware.CursorDefinitionAware;
+import org.apache.shardingsphere.infra.binder.context.aware.CursorAware;
 import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.ddl.CursorStatementContext;
 import org.apache.shardingsphere.infra.binder.context.type.CursorAvailable;
 import org.apache.shardingsphere.infra.binder.context.type.TableAvailable;
 import org.apache.shardingsphere.infra.binder.engine.SQLBindEngine;
-import org.apache.shardingsphere.infra.config.props.ConfigurationProperties;
 import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.connection.kernel.KernelProcessor;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
@@ -49,7 +48,6 @@ import org.apache.shardingsphere.infra.executor.sql.prepare.driver.DriverExecuti
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.JDBCDriverType;
 import org.apache.shardingsphere.infra.executor.sql.prepare.driver.jdbc.StatementOption;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
-import org.apache.shardingsphere.infra.hint.SQLHintUtils;
 import org.apache.shardingsphere.infra.merge.result.impl.local.LocalDataQueryResultRow;
 import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
@@ -89,12 +87,13 @@ public final class PreviewExecutor implements DistSQLQueryExecutor<PreviewStatem
     @Override
     public Collection<LocalDataQueryResultRow> getRows(final PreviewStatement sqlStatement, final ContextManager contextManager) throws SQLException {
         ShardingSphereMetaData metaData = contextManager.getMetaDataContexts().getMetaData();
-        String toBePreviewedSQL = SQLHintUtils.removeHint(sqlStatement.getSql());
-        HintValueContext hintValueContext = SQLHintUtils.extractHint(sqlStatement.getSql());
+        String toBePreviewedSQL = sqlStatement.getSql();
         SQLStatement toBePreviewedStatement = metaData.getGlobalRuleMetaData().getSingleRule(SQLParserRule.class).getSQLParserEngine(database.getProtocolType()).parse(toBePreviewedSQL, false);
+        HintValueContext hintValueContext = connectionContext.getQueryContext().getHintValueContext();
         SQLStatementContext toBePreviewedStatementContext = new SQLBindEngine(metaData, database.getName(), hintValueContext).bind(toBePreviewedStatement, Collections.emptyList());
-        QueryContext queryContext = new QueryContext(toBePreviewedStatementContext, toBePreviewedSQL, Collections.emptyList(), hintValueContext);
-        if (toBePreviewedStatementContext instanceof CursorAvailable && toBePreviewedStatementContext instanceof CursorDefinitionAware) {
+        QueryContext queryContext =
+                new QueryContext(toBePreviewedStatementContext, toBePreviewedSQL, Collections.emptyList(), hintValueContext, connectionContext.getQueryContext().getConnectionContext(), metaData);
+        if (toBePreviewedStatementContext instanceof CursorAvailable && toBePreviewedStatementContext instanceof CursorAware) {
             setUpCursorDefinition(toBePreviewedStatementContext);
         }
         ShardingSpherePreconditions.checkState(database.isComplete(), () -> new EmptyRuleException(database.getName()));
@@ -112,12 +111,12 @@ public final class PreviewExecutor implements DistSQLQueryExecutor<PreviewStatem
     
     private Collection<ExecutionUnit> getExecutionUnits(final ContextManager contextManager, final String schemaName, final ShardingSphereMetaData metaData,
                                                         final QueryContext queryContext) {
-        JDBCExecutor jdbcExecutor = new JDBCExecutor(BackendExecutorContext.getInstance().getExecutorEngine(), connectionContext.getConnectionContext());
+        JDBCExecutor jdbcExecutor = new JDBCExecutor(BackendExecutorContext.getInstance().getExecutorEngine(), connectionContext.getQueryContext().getConnectionContext());
         SQLFederationEngine federationEngine = new SQLFederationEngine(database.getName(), schemaName, metaData, contextManager.getMetaDataContexts().getStatistics(), jdbcExecutor);
-        if (federationEngine.decide(queryContext.getSqlStatementContext(), queryContext.getParameters(), database, metaData.getGlobalRuleMetaData())) {
+        if (federationEngine.decide(queryContext, metaData.getGlobalRuleMetaData())) {
             return getFederationExecutionUnits(queryContext, metaData, federationEngine);
         }
-        return new KernelProcessor().generateExecutionContext(queryContext, database, metaData.getGlobalRuleMetaData(), metaData.getProps(), connectionContext.getConnectionContext())
+        return new KernelProcessor().generateExecutionContext(queryContext, metaData.getGlobalRuleMetaData(), metaData.getProps(), connectionContext.getQueryContext().getConnectionContext())
                 .getExecutionUnits();
     }
     
@@ -126,14 +125,14 @@ public final class PreviewExecutor implements DistSQLQueryExecutor<PreviewStatem
             return;
         }
         String cursorName = ((CursorAvailable) toBePreviewedStatementContext).getCursorName().get().getIdentifier().getValue().toLowerCase();
-        CursorStatementContext cursorStatementContext = (CursorStatementContext) connectionContext.getConnectionContext().getCursorContext().getCursorDefinitions().get(cursorName);
+        CursorStatementContext cursorStatementContext = connectionContext.getQueryContext().getConnectionContext().getCursorContext().getCursorStatementContexts().get(cursorName);
         Preconditions.checkNotNull(cursorStatementContext, "Cursor %s does not exist.", cursorName);
-        ((CursorDefinitionAware) toBePreviewedStatementContext).setUpCursorDefinition(cursorStatementContext);
+        ((CursorAware) toBePreviewedStatementContext).setCursorStatementContext(cursorStatementContext);
     }
     
     private Collection<ExecutionUnit> getFederationExecutionUnits(final QueryContext queryContext, final ShardingSphereMetaData metaData, final SQLFederationEngine federationEngine) {
         SQLStatement sqlStatement = queryContext.getSqlStatementContext().getSqlStatement();
-        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = createDriverExecutionPrepareEngine(metaData.getProps());
+        DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> prepareEngine = createDriverExecutionPrepareEngine(metaData);
         SQLFederationContext context = new SQLFederationContext(true, queryContext, metaData,
                 ((ProxyDatabaseConnectionManager) connectionContext.getDatabaseConnectionManager()).getConnectionSession().getProcessId());
         federationEngine.executeQuery(prepareEngine, createPreviewCallback(sqlStatement), context);
@@ -156,8 +155,8 @@ public final class PreviewExecutor implements DistSQLQueryExecutor<PreviewStatem
     }
     
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> createDriverExecutionPrepareEngine(final ConfigurationProperties props) {
-        int maxConnectionsSizePerQuery = props.<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
+    private DriverExecutionPrepareEngine<JDBCExecutionUnit, Connection> createDriverExecutionPrepareEngine(final ShardingSphereMetaData metaData) {
+        int maxConnectionsSizePerQuery = metaData.getProps().<Integer>getValue(ConfigurationPropertyKey.MAX_CONNECTIONS_SIZE_PER_QUERY);
         return new DriverExecutionPrepareEngine<>(JDBCDriverType.STATEMENT, maxConnectionsSizePerQuery, connectionContext.getDatabaseConnectionManager(),
                 connectionContext.getExecutorStatementManager(), new StatementOption(false), database.getRuleMetaData().getRules(), database.getResourceMetaData().getStorageUnits());
     }

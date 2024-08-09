@@ -20,10 +20,10 @@ package org.apache.shardingsphere.test.e2e.framework.param.model;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
-import org.apache.shardingsphere.test.e2e.cases.IntegrationTestCaseContext;
-import org.apache.shardingsphere.test.e2e.cases.SQLCommandType;
-import org.apache.shardingsphere.test.e2e.cases.SQLExecuteType;
-import org.apache.shardingsphere.test.e2e.cases.assertion.IntegrationTestCaseAssertion;
+import org.apache.shardingsphere.test.e2e.cases.casse.E2ETestCaseContext;
+import org.apache.shardingsphere.test.e2e.framework.type.SQLCommandType;
+import org.apache.shardingsphere.test.e2e.framework.type.SQLExecuteType;
+import org.apache.shardingsphere.test.e2e.cases.casse.assertion.E2ETestCaseAssertion;
 
 /**
  * Assertion test parameter.
@@ -32,9 +32,9 @@ import org.apache.shardingsphere.test.e2e.cases.assertion.IntegrationTestCaseAss
 @Getter
 public final class AssertionTestParameter implements E2ETestParameter {
     
-    private final IntegrationTestCaseContext testCaseContext;
+    private final E2ETestCaseContext testCaseContext;
     
-    private final IntegrationTestCaseAssertion assertion;
+    private final E2ETestCaseAssertion assertion;
     
     private final String adapter;
     

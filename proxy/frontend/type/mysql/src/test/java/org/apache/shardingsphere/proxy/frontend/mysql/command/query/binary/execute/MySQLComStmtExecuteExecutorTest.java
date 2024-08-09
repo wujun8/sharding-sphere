@@ -32,10 +32,14 @@ import org.apache.shardingsphere.infra.binder.context.statement.SQLStatementCont
 import org.apache.shardingsphere.infra.binder.context.statement.UnknownSQLStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.dml.SelectStatementContext;
 import org.apache.shardingsphere.infra.binder.context.statement.dml.UpdateStatementContext;
+import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.database.mysql.type.MySQLDatabaseType;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
+import org.apache.shardingsphere.infra.session.connection.ConnectionContext;
 import org.apache.shardingsphere.infra.session.query.QueryContext;
 import org.apache.shardingsphere.proxy.backend.connector.ProxyDatabaseConnectionManager;
+import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandler;
 import org.apache.shardingsphere.proxy.backend.handler.ProxyBackendHandlerFactory;
 import org.apache.shardingsphere.proxy.backend.response.data.QueryResponseCell;
@@ -85,7 +89,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(AutoMockExtension.class)
-@StaticMockSettings(ProxyBackendHandlerFactory.class)
+@StaticMockSettings({ProxyBackendHandlerFactory.class, ProxyContext.class})
 @MockitoSettings(strictness = Strictness.LENIENT)
 class MySQLComStmtExecuteExecutorTest {
     
@@ -107,16 +111,26 @@ class MySQLComStmtExecuteExecutorTest {
                 .thenReturn(new MySQLServerPreparedStatement("SELECT * FROM tbl WHERE id = ?", selectStatementContext, new HintValueContext(), Collections.emptyList()));
         UpdateStatementContext updateStatementContext = mock(UpdateStatementContext.class, RETURNS_DEEP_STUBS);
         when(updateStatementContext.getSqlStatement()).thenReturn(prepareUpdateStatement());
+        when(updateStatementContext.getTablesContext().getDatabaseName()).thenReturn(Optional.empty());
         when(connectionSession.getServerPreparedStatementRegistry().getPreparedStatement(2))
                 .thenReturn(new MySQLServerPreparedStatement("UPDATE tbl SET col=1 WHERE id = ?", updateStatementContext, new HintValueContext(), Collections.emptyList()));
         when(connectionSession.getServerPreparedStatementRegistry().getPreparedStatement(3))
                 .thenReturn(new MySQLServerPreparedStatement("COMMIT", new UnknownSQLStatementContext(new MySQLCommitStatement()), new HintValueContext(), Collections.emptyList()));
+        ConnectionContext connectionContext = mockConnectionContext();
+        when(connectionSession.getConnectionContext()).thenReturn(connectionContext);
+        when(ProxyContext.getInstance().getContextManager().getMetaDataContexts().getMetaData()).thenReturn(new ShardingSphereMetaData());
     }
     
     private SQLStatementContext prepareSelectStatementContext() {
         SelectStatementContext result = mock(SelectStatementContext.class, RETURNS_DEEP_STUBS);
         when(result.getTablesContext().getDatabaseName()).thenReturn(Optional.empty());
         when(result.getSqlStatement()).thenReturn(prepareSelectStatement());
+        return result;
+    }
+    
+    private ConnectionContext mockConnectionContext() {
+        ConnectionContext result = mock(ConnectionContext.class);
+        when(result.getCurrentDatabaseName()).thenReturn(Optional.of(DefaultDatabase.LOGIC_NAME));
         return result;
     }
     

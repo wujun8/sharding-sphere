@@ -25,8 +25,11 @@ import org.apache.shardingsphere.infra.config.props.ConfigurationPropertyKey;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseTypeFactory;
 import org.apache.shardingsphere.infra.datasource.pool.CatalogSwitchableDataSource;
+import org.apache.shardingsphere.infra.datasource.pool.hikari.metadata.HikariDataSourcePoolFieldMetaData;
+import org.apache.shardingsphere.infra.datasource.pool.hikari.metadata.HikariDataSourcePoolMetaData;
 import org.apache.shardingsphere.infra.exception.core.external.sql.type.wrapper.SQLWrapperException;
 import org.apache.shardingsphere.infra.spi.type.typed.TypedSPILoader;
+import org.apache.shardingsphere.infra.util.reflection.ReflectionUtils;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -59,8 +62,7 @@ public final class DatabaseTypeEngine {
         if (configuredDatabaseType.isPresent()) {
             return configuredDatabaseType.get();
         }
-        Collection<DataSource> dataSources = databaseConfig.getStorageUnits().entrySet().stream()
-                .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new)).values();
+        Collection<DataSource> dataSources = getDataSources(databaseConfig).values();
         return dataSources.isEmpty() ? getDefaultStorageType() : getStorageType(dataSources.iterator().next());
     }
     
@@ -88,11 +90,14 @@ public final class DatabaseTypeEngine {
     private static Map<String, DataSource> getDataSources(final Map<String, ? extends DatabaseConfiguration> databaseConfigs) {
         Map<String, DataSource> result = new LinkedHashMap<>();
         for (Entry<String, ? extends DatabaseConfiguration> entry : databaseConfigs.entrySet()) {
-            Map<String, DataSource> dataSources = entry.getValue().getStorageUnits().entrySet().stream()
-                    .collect(Collectors.toMap(Entry::getKey, storageUnit -> storageUnit.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
-            result.putAll(dataSources);
+            result.putAll(getDataSources(entry.getValue()));
         }
         return result;
+    }
+    
+    private static Map<String, DataSource> getDataSources(final DatabaseConfiguration databaseConfig) {
+        return databaseConfig.getStorageUnits().entrySet().stream()
+                .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
     }
     
     /**
@@ -103,8 +108,7 @@ public final class DatabaseTypeEngine {
      */
     public static Map<String, DatabaseType> getStorageTypes(final DatabaseConfiguration databaseConfig) {
         Map<String, DatabaseType> result = new LinkedHashMap<>(databaseConfig.getStorageUnits().size(), 1F);
-        Map<String, DataSource> dataSources = databaseConfig.getStorageUnits().entrySet().stream()
-                .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().getDataSource(), (oldValue, currentValue) -> oldValue, LinkedHashMap::new));
+        Map<String, DataSource> dataSources = getDataSources(databaseConfig);
         for (Entry<String, DataSource> entry : dataSources.entrySet()) {
             result.put(entry.getKey(), getStorageType(entry.getValue()));
         }
@@ -114,7 +118,7 @@ public final class DatabaseTypeEngine {
     /**
      * Get storage type.
      * Similar to apache/hive 4.0.0's `org.apache.hive.jdbc.HiveDatabaseMetaData`, it does not implement {@link java.sql.DatabaseMetaData#getURL()}.
-     * So use {@link CatalogSwitchableDataSource#getUrl()} to try fuzzy matching.
+     * So use {@link CatalogSwitchableDataSource#getUrl()} and {@link ReflectionUtils#getFieldValue(Object, String)} to try fuzzy matching.
      *
      * @param dataSource data source
      * @return storage type
@@ -126,6 +130,12 @@ public final class DatabaseTypeEngine {
         } catch (final SQLFeatureNotSupportedException sqlFeatureNotSupportedException) {
             if (dataSource instanceof CatalogSwitchableDataSource) {
                 return DatabaseTypeFactory.get(((CatalogSwitchableDataSource) dataSource).getUrl());
+            }
+            if (dataSource.getClass().getName().equals(new HikariDataSourcePoolMetaData().getType())) {
+                HikariDataSourcePoolFieldMetaData dataSourcePoolFieldMetaData = new HikariDataSourcePoolFieldMetaData();
+                String jdbcUrlFieldName = ReflectionUtils.<String>getFieldValue(dataSource, dataSourcePoolFieldMetaData.getJdbcUrlFieldName())
+                        .orElseThrow(() -> new SQLWrapperException(sqlFeatureNotSupportedException));
+                return DatabaseTypeFactory.get(jdbcUrlFieldName);
             }
             throw new SQLWrapperException(sqlFeatureNotSupportedException);
         } catch (final SQLException ex) {

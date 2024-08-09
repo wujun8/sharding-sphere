@@ -32,6 +32,7 @@ import org.apache.shardingsphere.infra.util.json.JsonUtils;
 import org.apache.shardingsphere.infra.util.yaml.YamlEngine;
 import org.apache.shardingsphere.infra.yaml.config.swapper.rule.YamlRuleConfigurationSwapper;
 import org.apache.shardingsphere.mode.manager.ContextManager;
+import org.apache.shardingsphere.mode.metadata.decorator.RuleConfigurationPersistDecorateEngine;
 import org.apache.shardingsphere.proxy.backend.context.ProxyContext;
 import org.apache.shardingsphere.proxy.backend.distsql.export.ExportedClusterInfo;
 import org.apache.shardingsphere.proxy.backend.distsql.export.ExportedMetaData;
@@ -75,7 +76,10 @@ public final class ExportMetaDataExecutor implements DistSQLQueryExecutor<Export
         ExportedMetaData exportedMetaData = new ExportedMetaData();
         exportedMetaData.setDatabases(getDatabases(proxyContext));
         exportedMetaData.setProps(generatePropsData(metaData.getProps().getProps()));
-        exportedMetaData.setRules(generateRulesData(metaData.getGlobalRuleMetaData().getConfigurations()));
+        RuleConfigurationPersistDecorateEngine ruleConfigPersistDecorateEngine =
+                new RuleConfigurationPersistDecorateEngine(ProxyContext.getInstance().getContextManager().getComputeNodeInstanceContext());
+        Collection<RuleConfiguration> ruleConfigs = ruleConfigPersistDecorateEngine.decorate(metaData.getGlobalRuleMetaData().getConfigurations());
+        exportedMetaData.setRules(generateRulesData(ruleConfigs));
         ExportedClusterInfo exportedClusterInfo = new ExportedClusterInfo();
         exportedClusterInfo.setMetaData(exportedMetaData);
         generateSnapshotInfo(metaData, exportedClusterInfo);

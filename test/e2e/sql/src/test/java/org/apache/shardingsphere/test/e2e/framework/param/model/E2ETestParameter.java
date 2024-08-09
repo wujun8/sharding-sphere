@@ -18,8 +18,8 @@
 package org.apache.shardingsphere.test.e2e.framework.param.model;
 
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
-import org.apache.shardingsphere.test.e2e.cases.IntegrationTestCaseContext;
-import org.apache.shardingsphere.test.e2e.cases.SQLCommandType;
+import org.apache.shardingsphere.test.e2e.cases.casse.E2ETestCaseContext;
+import org.apache.shardingsphere.test.e2e.framework.type.SQLCommandType;
 
 /**
  * E2E test parameter.
@@ -28,10 +28,10 @@ public interface E2ETestParameter {
     
     /**
      * Get test case context.
-     * 
+     *
      * @return test case context
      */
-    IntegrationTestCaseContext getTestCaseContext();
+    E2ETestCaseContext getTestCaseContext();
     
     /**
      * Get database type.
@@ -49,7 +49,7 @@ public interface E2ETestParameter {
     
     /**
      * Get adapter.
-     * 
+     *
      * @return adapter
      */
     String getAdapter();
@@ -63,14 +63,14 @@ public interface E2ETestParameter {
     
     /**
      * Get sql command type.
-     * 
+     *
      * @return sql command type
      */
     SQLCommandType getSqlCommandType();
     
     /**
      * Get key.
-     * 
+     *
      * @return key of test parameter
      */
     default String getKey() {

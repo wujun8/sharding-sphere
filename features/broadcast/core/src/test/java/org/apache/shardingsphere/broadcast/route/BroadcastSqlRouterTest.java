@@ -27,6 +27,7 @@ import org.apache.shardingsphere.infra.database.core.DefaultDatabase;
 import org.apache.shardingsphere.infra.datanode.DataNode;
 import org.apache.shardingsphere.infra.datasource.pool.props.domain.DataSourcePoolProperties;
 import org.apache.shardingsphere.infra.hint.HintValueContext;
+import org.apache.shardingsphere.infra.metadata.ShardingSphereMetaData;
 import org.apache.shardingsphere.infra.metadata.database.ShardingSphereDatabase;
 import org.apache.shardingsphere.infra.metadata.database.resource.node.StorageNode;
 import org.apache.shardingsphere.infra.metadata.database.resource.unit.StorageUnit;
@@ -58,6 +59,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -132,7 +134,14 @@ class BroadcastSqlRouterTest {
     private QueryContext createQueryContext() {
         CreateTableStatement createTableStatement = new MySQLCreateTableStatement(false);
         createTableStatement.setTable(new SimpleTableSegment(new TableNameSegment(1, 2, new IdentifierValue("t_order"))));
-        return new QueryContext(new CreateTableStatementContext(createTableStatement), "CREATE TABLE", new LinkedList<>(), new HintValueContext());
+        return new QueryContext(new CreateTableStatementContext(createTableStatement, DefaultDatabase.LOGIC_NAME), "CREATE TABLE", new LinkedList<>(), new HintValueContext(),
+                mockConnectionContext(), mock(ShardingSphereMetaData.class));
+    }
+    
+    private ConnectionContext mockConnectionContext() {
+        ConnectionContext result = mock(ConnectionContext.class);
+        when(result.getCurrentDatabaseName()).thenReturn(Optional.of(DefaultDatabase.LOGIC_NAME));
+        return result;
     }
     
     private Map<String, DataSource> createMultiDataSourceMap() throws SQLException {

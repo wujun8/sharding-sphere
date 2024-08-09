@@ -417,7 +417,7 @@ public abstract class PostgreSQLStatementVisitor extends PostgreSQLStatementPars
         SubquerySegment subquerySegment = new SubquerySegment(ctx.selectWithParens().getStart().getStartIndex(),
                 ctx.selectWithParens().getStop().getStopIndex(), (PostgreSQLSelectStatement) visit(ctx.selectWithParens()), getOriginalText(ctx.selectWithParens()));
         if (null != ctx.EXISTS()) {
-            subquerySegment.setSubqueryType(SubqueryType.EXISTS_SUBQUERY);
+            subquerySegment.setSubqueryType(SubqueryType.EXISTS);
             return new ExistsSubqueryExpression(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), subquerySegment);
         }
         return new SubqueryExpressionSegment(subquerySegment);
@@ -1299,7 +1299,8 @@ public abstract class PostgreSQLStatementVisitor extends PostgreSQLStatementPars
         if (astNode instanceof ParameterMarkerExpressionSegment) {
             return new ParameterMarkerLimitValueSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ((ParameterMarkerExpressionSegment) astNode).getParameterMarkerIndex());
         }
-        return new NumberLiteralLimitValueSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), Long.parseLong(((LiteralExpressionSegment) astNode).getLiterals().toString()));
+        return new NumberLiteralLimitValueSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(),
+                (null == ((LiteralExpressionSegment) astNode).getLiterals()) ? null : Long.parseLong(((LiteralExpressionSegment) astNode).getLiterals().toString()));
     }
     
     @Override
@@ -1308,7 +1309,8 @@ public abstract class PostgreSQLStatementVisitor extends PostgreSQLStatementPars
         if (astNode instanceof ParameterMarkerExpressionSegment) {
             return new ParameterMarkerLimitValueSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ((ParameterMarkerExpressionSegment) astNode).getParameterMarkerIndex());
         }
-        return new NumberLiteralLimitValueSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), Long.parseLong(((LiteralExpressionSegment) astNode).getLiterals().toString()));
+        return new NumberLiteralLimitValueSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(),
+                (null == ((LiteralExpressionSegment) astNode).getLiterals()) ? null : Long.parseLong(((LiteralExpressionSegment) astNode).getLiterals().toString()));
     }
     
     @Override
@@ -1317,7 +1319,8 @@ public abstract class PostgreSQLStatementVisitor extends PostgreSQLStatementPars
         if (astNode instanceof ParameterMarkerExpressionSegment) {
             return new ParameterMarkerLimitValueSegment(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex(), ((ParameterMarkerExpressionSegment) astNode).getParameterMarkerIndex());
         }
-        return new NumberLiteralLimitValueSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(), Long.parseLong(((LiteralExpressionSegment) astNode).getLiterals().toString()));
+        return new NumberLiteralLimitValueSegment(ctx.start.getStartIndex(), ctx.stop.getStopIndex(),
+                (null == ((LiteralExpressionSegment) astNode).getLiterals()) ? null : Long.parseLong(((LiteralExpressionSegment) astNode).getLiterals().toString()));
     }
     
     private LimitSegment createLimitSegmentWhenLimitAndOffset(final SelectLimitContext ctx) {

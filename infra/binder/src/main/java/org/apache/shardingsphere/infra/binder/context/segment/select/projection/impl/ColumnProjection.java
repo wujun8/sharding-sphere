@@ -24,10 +24,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.apache.shardingsphere.infra.binder.context.segment.select.projection.Projection;
-import org.apache.shardingsphere.infra.binder.context.segment.select.projection.util.ProjectionUtils;
+import org.apache.shardingsphere.infra.binder.context.segment.select.projection.extractor.ProjectionIdentifierExtractEngine;
 import org.apache.shardingsphere.infra.database.core.metadata.database.enums.QuoteCharacter;
 import org.apache.shardingsphere.infra.database.core.type.DatabaseType;
 import org.apache.shardingsphere.infra.database.mysql.type.MySQLDatabaseType;
+import org.apache.shardingsphere.sql.parser.statement.core.segment.generic.ParenthesesSegment;
 import org.apache.shardingsphere.sql.parser.statement.core.value.identifier.IdentifierValue;
 
 import java.util.Optional;
@@ -50,23 +51,33 @@ public final class ColumnProjection implements Projection {
     
     private final DatabaseType databaseType;
     
+    private final ParenthesesSegment leftParentheses;
+    
+    private final ParenthesesSegment rightParentheses;
+    
     private IdentifierValue originalTable;
     
     private IdentifierValue originalColumn;
     
     public ColumnProjection(final String owner, final String name, final String alias, final DatabaseType databaseType) {
         this(null == owner ? null : new IdentifierValue(owner, QuoteCharacter.NONE), new IdentifierValue(name, QuoteCharacter.NONE),
-                null == alias ? null : new IdentifierValue(alias, QuoteCharacter.NONE), databaseType);
+                null == alias ? null : new IdentifierValue(alias, QuoteCharacter.NONE), databaseType, null, null);
+    }
+    
+    public ColumnProjection(final IdentifierValue owner, final IdentifierValue name, final IdentifierValue alias, final DatabaseType databaseType) {
+        this(owner, name, alias, databaseType, null, null);
     }
     
     @Override
     public String getColumnName() {
-        return databaseType instanceof MySQLDatabaseType ? ProjectionUtils.getColumnNameFromColumn(name, databaseType) : getColumnLabel();
+        ProjectionIdentifierExtractEngine extractEngine = new ProjectionIdentifierExtractEngine(databaseType);
+        return databaseType instanceof MySQLDatabaseType ? extractEngine.getIdentifierValue(name) : getColumnLabel();
     }
     
     @Override
     public String getColumnLabel() {
-        return getAlias().isPresent() ? ProjectionUtils.getColumnLabelFromAlias(getAlias().get(), databaseType) : ProjectionUtils.getColumnNameFromColumn(name, databaseType);
+        ProjectionIdentifierExtractEngine extractEngine = new ProjectionIdentifierExtractEngine(databaseType);
+        return getAlias().isPresent() ? extractEngine.getIdentifierValue(getAlias().get()) : extractEngine.getIdentifierValue(name);
     }
     
     @Override
@@ -107,5 +118,23 @@ public final class ColumnProjection implements Projection {
      */
     public IdentifierValue getOriginalColumn() {
         return null == originalColumn || Strings.isNullOrEmpty(originalColumn.getValue()) ? name : originalColumn;
+    }
+    
+    /**
+     * Get left parentheses.
+     *
+     * @return left parentheses
+     */
+    public Optional<ParenthesesSegment> getLeftParentheses() {
+        return Optional.ofNullable(leftParentheses);
+    }
+    
+    /**
+     * Get right parentheses.
+     *
+     * @return right parentheses
+     */
+    public Optional<ParenthesesSegment> getRightParentheses() {
+        return Optional.ofNullable(rightParentheses);
     }
 }
